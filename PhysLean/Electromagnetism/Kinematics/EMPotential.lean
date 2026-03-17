@@ -8,6 +8,7 @@ module
 public import PhysLean.Electromagnetism.Basic
 public import PhysLean.SpaceAndTime.SpaceTime.TimeSlice
 public import PhysLean.Mathematics.VariationalCalculus.HasVarGradient
+public import PhysLean.Electromagnetism.Atlas
 /-!
 
 # The Electromagnetic Potential
@@ -66,6 +67,7 @@ contravariant Lorentz vectors, and prove some simple results about it.
 
 -/
 /-- The electromagnetic potential is a tensor `A^μ`. -/
+@[requirement Requirement.EMPotential.definition]
 noncomputable abbrev ElectromagneticPotential (d : ℕ := 3) :=
   SpaceTime d → Lorentz.Vector d
 
@@ -89,6 +91,7 @@ Under a Lorentz transformation `Λ`, this transforms as
 
 -/
 
+@[requirement Requirement.EMPotential.groupAction]
 lemma spaceTime_deriv_action_eq_sum {d} {μ ν : Fin 1 ⊕ Fin d} {x : SpaceTime d}
     (Λ : LorentzGroup d) (A : ElectromagneticPotential d) (hA : Differentiable ℝ A) :
     ∂_ μ (fun x => Λ • A (Λ⁻¹ • x)) x ν =
@@ -244,6 +247,8 @@ applying the Lorentz transformation to the potential and then taking the derivat
 as taking the derivative and then applying the Lorentz transformation to the resulting tensor.
 
 -/
+
+@[requirement Requirement.EMPotential.groupAction]
 lemma deriv_equivariant {d} {x : SpaceTime d} (A : ElectromagneticPotential d)
     (Λ : LorentzGroup d)
     (hf : Differentiable ℝ A) : deriv (fun x => Λ • A (Λ⁻¹ • x)) x = Λ • (deriv A (Λ⁻¹ • x)) := by
@@ -364,6 +369,7 @@ end ElectromagneticPotential
 -/
 
 /-- The electromagnetic potential as a distribution and as a tensor `A^μ`. -/
+@[requirement Requirement.EMPotential.definition]
 noncomputable abbrev DistElectromagneticPotential (d : ℕ := 3) :=
   (SpaceTime d) →d[ℝ] Lorentz.Vector d
 
