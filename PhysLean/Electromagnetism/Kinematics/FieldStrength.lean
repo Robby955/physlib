@@ -73,34 +73,147 @@ under Lorentz transformations.
 /-- The field strength from an electromagnetic potential, as a tensor `F_μ^ν`. -/
 noncomputable def toFieldStrength {d} (A : ElectromagneticPotential d) :
     SpaceTime d → Lorentz.Vector d ⊗[ℝ] Lorentz.Vector d := fun x =>
-  Tensorial.toTensor.symm
-  (permT id (PermCond.auto) {(η d | μ μ' ⊗ A.deriv x | μ' ν) + - (η d | ν ν' ⊗ A.deriv x | ν' μ)}ᵀ)
+  Tensorial.toTensor.symm (permT id PermCond.auto {(η d | μ μ' ⊗ tensorDeriv A x | μ' ν)
+  + - (η d | ν ν' ⊗ tensorDeriv A x | ν' μ)}ᵀ)
 
 /-!
 
-### A.1. Basic equalities
+### A.1. Equalities for the field strength tensor
+
+We write the field strength tensor into different forms, making future manipulations easier.
 
 -/
 
-lemma toFieldStrength_eq_add {d} (A : ElectromagneticPotential d) (x : SpaceTime d) :
-    toFieldStrength A x =
-    Tensorial.toTensor.symm (permT id (PermCond.auto) {(η d | μ μ' ⊗ A.deriv x | μ' ν)}ᵀ)
-    - Tensorial.toTensor.symm (permT ![1, 0] (PermCond.auto)
-      {(η d | μ μ' ⊗ A.deriv x | μ' ν)}ᵀ) := by
-  rw [toFieldStrength]
-  simp only [map_add, map_neg]
-  rw [sub_eq_add_neg]
-  apply congrArg₂
-  · rfl
-  · rw [permT_permT]
-    rfl
+open Tensorial
 
-lemma toTensor_toFieldStrength {d} (A : ElectromagneticPotential d) (x : SpaceTime d) :
-    Tensorial.toTensor (toFieldStrength A x) =
-    (permT id (PermCond.auto) {(η d | μ μ' ⊗ A.deriv x | μ' ν)}ᵀ)
-    - (permT ![1, 0] (PermCond.auto) {(η d | μ μ' ⊗ A.deriv x | μ' ν)}ᵀ) := by
-  rw [toFieldStrength_eq_add]
-  simp
+lemma toFieldstrength_eq {d} (A : ElectromagneticPotential d) :
+    toFieldStrength A = fun x =>
+  Tensorial.toTensor.symm (permT id PermCond.auto {(η d | μ μ' ⊗ tensorDeriv A x | μ' ν)
+  + - (η d | ν ν' ⊗ tensorDeriv A x | ν' μ)}ᵀ) := by rfl
+
+lemma toFieldStrength_eq_sub {d} (A : ElectromagneticPotential d) (x : SpaceTime d) :
+    toFieldStrength A x =
+    Tensorial.toTensor.symm (permT id PermCond.auto {η d | μ μ' ⊗ tensorDeriv A x | μ' ν}ᵀ)
+    - Tensorial.toTensor.symm (permT ![1, 0] PermCond.auto
+    {η d | μ μ' ⊗ tensorDeriv A x | μ' ν}ᵀ) := by
+  simp only [toFieldstrength_eq, map_add, map_neg, sub_eq_add_neg, permT_permT]
+  rfl
+
+lemma toFieldStrength_eq_sum_tensor_basis {d} {A : ElectromagneticPotential d}
+    (hA : Differentiable ℝ A) (x : SpaceTime d) :
+    toFieldStrength A x = ∑ b,
+      (∑ κ, (η (finSumFinEquiv.symm (b 0)) κ *  ∂_ κ A x (finSumFinEquiv.symm (b 1)) -
+      η (finSumFinEquiv.symm (b 1)) κ * ∂_ κ A x (finSumFinEquiv.symm (b 0)))) •
+      toTensor.symm (Tensor.basis _ b) := by
+  refine Tensorial.toTensor.injective ((Tensor.basis _).repr.injective ?_)
+  ext b
+  simp only [Nat.reduceSucc, Nat.reduceAdd, toFieldStrength_eq_sub, Fin.isValue,
+    self_toTensor_apply, map_sub, LinearEquiv.apply_symm_apply, Finsupp.coe_sub, Pi.sub_apply,
+    permT_basis_repr_symm_apply, contrT_basis_repr_apply_eq_fin, Finset.sum_sub_distrib, map_sum,
+    map_smul, Basis.repr_self, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.single_sub,
+    Finsupp.coe_finset_sum, Finset.sum_apply, Finsupp.single_apply, Finset.sum_ite_eq',
+    Finset.mem_univ, ↓reduceIte]
+  conv_lhs =>
+    enter [1, 2, n]
+    rw [Tensor.prodT_basis_repr_apply, contrMetric_repr_apply_eq_minkowskiMatrix]
+    enter [1]
+    change η (finSumFinEquiv.symm (b 0)) (finSumFinEquiv.symm n)
+  conv_lhs =>
+    enter [1, 2, n, 2]
+    simp [tensorDeriv_eq_sum_tensor_basis hA, Finsupp.single_apply]
+    change ∂_ (finSumFinEquiv.symm n) A x (finSumFinEquiv.symm (b 1))
+  conv_lhs =>
+    enter [2, 2, n]
+    rw [Tensor.prodT_basis_repr_apply, contrMetric_repr_apply_eq_minkowskiMatrix]
+    enter [1]
+    change η (finSumFinEquiv.symm (b 1)) (finSumFinEquiv.symm n)
+  conv_lhs =>
+    enter [2, 2, n, 2]
+    simp [tensorDeriv_eq_sum_tensor_basis hA, Finsupp.single_apply]
+    change ∂_ (finSumFinEquiv.symm n) A x (finSumFinEquiv.symm (b 0))
+  rw [← Finset.sum_sub_distrib, ← finSumFinEquiv.sum_comp]
+  simp [Fin.isValue, Equiv.symm_apply_apply]
+
+open Lorentz
+
+lemma toFieldStrength_eq_sum_basis {d} {A : ElectromagneticPotential d}
+    (hA : Differentiable ℝ A) :
+    A.toFieldStrength = fun x => ∑ (μν : (Fin 1 ⊕ Fin d) × (Fin 1 ⊕ Fin d)),
+      (∑ κ, (η μν.1 κ *  ∂_ κ A x μν.2 - η μν.2 κ * ∂_ κ A x μν.1)) •
+      Vector.basis μν.1 ⊗ₜ[ℝ] Vector.basis μν.2 := by
+  funext x
+  rw [toFieldStrength_eq_sum_tensor_basis hA,
+    ← (ComponentIdx.prodEquiv (S := realLorentzTensor d).trans
+    (Lorentz.Vector.indexEquiv.prodCongr Lorentz.Vector.indexEquiv)).symm.sum_comp]
+  apply Finset.sum_congr rfl (fun μν _ => ?_)
+  congr 1
+  · simp only [Nat.reduceSucc, Nat.reduceAdd, Fin.isValue, Equiv.symm_trans_apply,
+    Equiv.prodCongr_symm, Equiv.prodCongr_apply]
+    refine Finset.sum_congr rfl (fun κ _ => ?_)
+    congr
+    all_goals
+    · try apply congrArg
+      rcases μν with ⟨μ, ν⟩
+      simp [ComponentIdx.prodEquiv, Equiv.symm_apply_eq]
+      rfl
+  · rcases μν with ⟨μ, ν⟩
+    simp only [basis_prod_eq, Equiv.symm_trans_apply,
+      Equiv.prodCongr_symm, Equiv.prodCongr_apply, Prod.map_apply, Basis.map_apply,
+      Basis.coe_reindex, Equiv.symm_symm, Function.comp_apply, Equiv.apply_symm_apply,
+      Basis.tensorProduct_apply, Vector.basis_eq_map_tensor_basis]
+    exact toTensor_symm_tensorEquivProd _ _
+
+lemma toFieldStrength_eq_sum_basis_single {d} {A : ElectromagneticPotential d}
+    (hA : Differentiable ℝ A) :
+    toFieldStrength A = fun x => ∑ (μν : (Fin 1 ⊕ Fin d) × (Fin 1 ⊕ Fin d)),
+      (η μν.1 μν.1 * ∂_ μν.1 A x μν.2 - η μν.2 μν.2 * ∂_ μν.2 A x μν.1)•
+      Vector.basis μν.1 ⊗ₜ[ℝ] Vector.basis μν.2 := by
+  funext x
+  rw [toFieldStrength_eq_sum_basis hA]
+  refine Finset.sum_congr rfl (fun μν _ => ?_)
+  simp only [Finset.sum_sub_distrib]
+  rw [Finset.sum_eq_single μν.1, Finset.sum_eq_single μν.2]
+  · intro b _ hb
+    rw [minkowskiMatrix.off_diag_zero]
+    simp only [zero_mul]
+    exact id (Ne.symm hb)
+  · simp
+  · intro b _ hb
+    rw [minkowskiMatrix.off_diag_zero]
+    simp only [zero_mul]
+    exact id (Ne.symm hb)
+  · simp
+
+/-!
+
+### A.2. Differentiability of the field strength tensor
+
+-/
+
+@[fun_prop]
+lemma toFieldStrength_differentiable {d} {A : ElectromagneticPotential d} (hA : ContDiff ℝ 2 A) :
+    Differentiable ℝ A.toFieldStrength := by
+  rw [toFieldStrength_eq_sum_basis_single <| hA.differentiable (by simp)]
+  fun_prop
+
+@[fun_prop]
+lemma toFieldStrength_contDiff {d} {n : WithTop ℕ∞} {A : ElectromagneticPotential d}
+    (hA : ContDiff ℝ (n + 1) A) : ContDiff ℝ n A.toFieldStrength := by
+  rw [toFieldStrength_eq_sum_basis_single <| hA.differentiable (by simp)]
+  fun_prop
+
+
+/-!
+
+### A.3. The antisymmetry of the field strength tensor
+
+-/
+
+lemma toFieldStrength_antisymmetric_tensor {d} {A : ElectromagneticPotential d}
+    (hA : Differentiable ℝ A) (x : SpaceTime d) :
+    {A.toFieldStrength x | μ ν = - (A.toFieldStrength x | ν μ)}ᵀ := by
+
+  sorry
 
 /-!
 
@@ -108,13 +221,15 @@ lemma toTensor_toFieldStrength {d} (A : ElectromagneticPotential d) (x : SpaceTi
 
 -/
 
-lemma toTensor_toFieldStrength_basis_repr {d} (A : ElectromagneticPotential d) (x : SpaceTime d)
+lemma toTensor_toFieldStrength_basis_repr {d} {A : ElectromagneticPotential d}
+    (hA : Differentiable ℝ A) (x : SpaceTime d)
     (b : ComponentIdx (S := realLorentzTensor d) (Fin.append ![Color.up] ![Color.up])) :
     (Tensor.basis _).repr (Tensorial.toTensor (toFieldStrength A x)) b =
     ∑ κ, (η (finSumFinEquiv.symm (b 0)) κ * ∂_ κ A x (finSumFinEquiv.symm (b 1)) -
       η (finSumFinEquiv.symm (b 1)) κ * ∂_ κ A x (finSumFinEquiv.symm (b 0))) := by
-  rw [toTensor_toFieldStrength]
-  simp only [Tensorial.self_toTensor_apply, map_sub,
+
+  rw [toFieldStrength_eq_sub]
+  simp  [Tensorial.self_toTensor_apply, map_sub,
     Finsupp.coe_sub, Pi.sub_apply]
   rw [Tensor.permT_basis_repr_symm_apply, contrT_basis_repr_apply_eq_fin]
   conv_lhs =>
@@ -124,7 +239,8 @@ lemma toTensor_toFieldStrength_basis_repr {d} (A : ElectromagneticPotential d) (
     change η (finSumFinEquiv.symm (b 0)) (finSumFinEquiv.symm n)
   conv_lhs =>
     enter [1, 2, n, 2]
-    rw [toTensor_deriv_basis_repr_apply]
+    rw [tensorDeriv_eq_sum_tensor_basis hA]
+    simp [Finsupp.single_apply]
     change ∂_ (finSumFinEquiv.symm n) A x (finSumFinEquiv.symm (b 1))
   rw [Tensor.permT_basis_repr_symm_apply, contrT_basis_repr_apply_eq_fin]
   conv_lhs =>
@@ -134,11 +250,13 @@ lemma toTensor_toFieldStrength_basis_repr {d} (A : ElectromagneticPotential d) (
     change η (finSumFinEquiv.symm (b 1)) (finSumFinEquiv.symm n)
   conv_lhs =>
     enter [2, 2, n, 2]
-    rw [toTensor_deriv_basis_repr_apply]
+    rw [tensorDeriv_eq_sum_tensor_basis hA]
+    simp [Finsupp.single_apply]
     change ∂_ (finSumFinEquiv.symm n) A x (finSumFinEquiv.symm (b 0))
   rw [← Finset.sum_sub_distrib]
   rw [← finSumFinEquiv.sum_comp]
-  simp only [Fin.isValue, Equiv.symm_apply_apply]
+  simp [Fin.isValue, Equiv.symm_apply_apply]
+
 
 lemma toFieldStrength_tensor_basis_eq_basis {d} (A : ElectromagneticPotential d) (x : SpaceTime d)
     (b : ComponentIdx (S := realLorentzTensor d) (Fin.append ![Color.up] ![Color.up])) :
@@ -259,19 +377,6 @@ lemma fieldStrengthMatrix_differentiable {d} {A : ElectromagneticPotential d}
   apply Differentiable.const_mul
   · exact diff_partial _ _
 
-lemma toFieldStrength_differentiable {d} {A : ElectromagneticPotential d}
-    (hA : ContDiff ℝ 2 A) :
-    Differentiable ℝ (toFieldStrength A) := by
-  conv =>
-    enter [2]
-    rw [toFieldStrength_eq_fieldStrengthMatrix]
-  apply Differentiable.fun_sum
-  intro μ _
-  apply Differentiable.fun_sum
-  intro ν _
-  apply Differentiable.smul_const
-  exact fieldStrengthMatrix_differentiable hA
-
 lemma fieldStrengthMatrix_differentiable_space {d} {A : ElectromagneticPotential d}
     {μν} (hA : ContDiff ℝ 2 A) (t : Time) {c : SpeedOfLight} :
     Differentiable ℝ (fun x => A.fieldStrengthMatrix ((toTimeAndSpace c).symm (t, x)) μν) := by
@@ -329,18 +434,7 @@ We show that the field strength tensor is antisymmetric.
 
 -/
 
-lemma toFieldStrength_antisymmetric {d} (A : ElectromagneticPotential d) (x : SpaceTime d) :
-    {A.toFieldStrength x | μ ν = - (A.toFieldStrength x | ν μ)}ᵀ := by
-  apply (Tensor.basis _).repr.injective
-  ext b
-  rw [toTensor_toFieldStrength_basis_repr]
-  rw [permT_basis_repr_symm_apply, map_neg]
-  simp only [Nat.reduceAdd, Fin.isValue, Nat.reduceSucc, Finsupp.coe_neg, Pi.neg_apply]
-  rw [toTensor_toFieldStrength_basis_repr]
-  rw [← Finset.sum_neg_distrib]
-  apply Finset.sum_congr rfl (fun κ _ => ?_)
-  simp only [Fin.isValue, Fin.cast_eq_self, neg_sub]
-  rfl
+
 
 lemma fieldStrengthMatrix_antisymm {d} (A : ElectromagneticPotential d) (x : SpaceTime d)
     (μ ν : Fin 1 ⊕ Fin d) :

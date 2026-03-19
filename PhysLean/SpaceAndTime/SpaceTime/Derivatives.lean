@@ -427,8 +427,7 @@ lemma tensorDeriv_equivariant (f : SpaceTime d → M) (Λ : LorentzGroup d) (x :
   simp [TensorSpecies.Tensorial.smulLinearMap_apply]
 
 lemma tensorDeriv_toTensor_basis_repr
-    {f : SpaceTime d → M}
-    (hf : Differentiable ℝ f) (x : SpaceTime d)
+    {f : SpaceTime d → M} (hf : Differentiable ℝ f) (x : SpaceTime d)
     (b : Tensor.ComponentIdx (Fin.append ![realLorentzTensor.Color.down] c)) :
     (Tensor.basis _).repr (Tensorial.toTensor (tensorDeriv f x)) b =
     ∂_ (Lorentz.CoVector.indexEquiv (Tensor.ComponentIdx.prodEquiv b).1)
@@ -460,6 +459,18 @@ lemma tensorDeriv_toTensor_basis_repr
     intro hx
     grind
   · simp
+
+open TensorSpecies.Tensorial Lorentz Tensor
+lemma tensorDeriv_eq_sum_tensor_basis
+    {f : SpaceTime d → M} (hf : Differentiable ℝ f) (x : SpaceTime d) :
+    tensorDeriv f x = ∑ b, ∂_ (CoVector.indexEquiv (ComponentIdx.prodEquiv b).1)
+      (fun x => (Tensor.basis _).repr (toTensor (f x)) (ComponentIdx.prodEquiv b).2) x •
+    toTensor.symm (Tensor.basis _ b) := by
+  apply Tensorial.toTensor.injective
+  apply (Tensor.basis (Fin.append _ _)).repr.injective
+  ext b
+  simp [Finsupp.single_apply, tensorDeriv_toTensor_basis_repr hf]
+
 
 /-!
 

@@ -42,6 +42,15 @@ lemma ComponentIdx.congr_right {n : ℕ} {c : Fin n → C} (b : ComponentIdx (S 
   subst h
   rfl
 
+lemma ComponentIdx.eq_iff {n : ℕ} {c : Fin n → C} (b1 b2 : ComponentIdx (S := S) c) :
+    b1 = b2 ↔ ∀ i, b1 i = b2 i := by
+  constructor
+  · rintro rfl
+    simp
+  · intro h
+    ext i
+    rw [h i]
+
 /-- Casting of a `ComponentIdx` through equivalent color maps. -/
 def ComponentIdx.cast {n m : ℕ} {c : Fin n → C} {cm : Fin m → C}
     (h : n = m) (hc : c = cm ∘ Fin.cast h) (b : ComponentIdx (S := S) c) :

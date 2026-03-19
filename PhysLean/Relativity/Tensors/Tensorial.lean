@@ -237,6 +237,16 @@ lemma toTensor_tprod {n2 : ℕ} {c2 : Fin n2 → C} {M₂ : Type}
     [Tensorial S c2 M₂] (m : M) (m2 : M₂) :
     toTensor (m ⊗ₜ[k] m2) = Tensor.prodT (toTensor m) (toTensor m2) := rfl
 
+@[simp]
+lemma toTensor_symm_tensorEquivProd {n2 : ℕ} {c2 : Fin n2 → C} {M₂ : Type}
+    [Tensorial S c M] [AddCommMonoid M₂] [Module k M₂]
+    [Tensorial S c2 M₂] (t : S.Tensor c) (t2 : S.Tensor c2) :
+    toTensor.symm (Tensor.tensorEquivProd (t ⊗ₜ t2)) =
+    toTensor (M := M).symm t ⊗ₜ[k] toTensor (M := M₂).symm t2 := by
+  apply toTensor.injective
+  simp only [LinearEquiv.apply_symm_apply, toTensor_tprod]
+  rfl
+
 /-!
 
 ### D.2. The group action on products
