@@ -255,6 +255,20 @@ instance : CompleteSpace ConfigurationSpace := by
   classical
   simpa using (FiniteDimensional.complete ℝ ConfigurationSpace)
 
+/-- The diffeomorphism between ℝ and ConfigurationSpace. -/
+noncomputable def toRealDiffeo : Diffeomorph 𝓘(ℝ, ℝ) 𝓘(ℝ, ℝ)  ℝ ConfigurationSpace ω where
+  toFun := fromRealCLM
+  invFun := toRealCLM
+  left_inv := by
+    intro t
+    cases t
+    rfl
+  right_inv := by
+    intro t
+    rfl
+  contMDiff_toFun := contMDiff_iff.mpr ⟨fromRealCLM.continuous, fun x y => contDiffOn_id⟩
+  contMDiff_invFun := contMDiff_iff.mpr ⟨toRealCLM.continuous, fun x y => contDiffOn_id⟩
+
 /-!
 ## Map to space
 -/
