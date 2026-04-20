@@ -5,22 +5,50 @@ Authors: Joseph Tooby-Smith
 -/
 module
 
-public import Physlib.QFT.QED.AnomalyCancellation.Odd.BasisLinear.ChargeSplits
+public import Physlib.QFT.QED.AnomalyCancellation.Odd.BasisLinear.SymmPlane
 /-!
-# The shifted plane for the odd case basis
+# The shifted plane for the odd case
 
-The shifted plane is the span of basis vectors `shiftBasis`, each of which has charge `+1` at
-position `oddShiftFst j` and charge `-1` at position `oddShiftSnd j`. It is called "shifted"
-because these positions come from the **shifted split** of the `2 * n + 1` charge indices into
-`1 + n + n` (see `ChargeSplits`).
+This file defines the shifted plane for `PureU1 (2 * n + 1)`.
+
+The shifted plane arises from the shifted split `1 + n + n` of the `2 * n + 1` charges.
+It is called "shifted" because the positions (`oddShiftFst`, `oddShiftSnd`, `oddShiftZero`)
+come from this shifted split, which places the distinguished element at position `0` rather
+than in the middle.
+
+## Main definitions
+
+- `shiftBasisAsCharges` : The basis vectors of the shifted plane as charges.
+- `shiftBasis` : The basis vectors of the shifted plane as `LinSols`.
+- `shiftPlane` : A point in the span of the shifted basis as a charge assignment.
+- `shiftPlaneLinSols` : A point in the span of the shifted basis as a linear solution.
 
 ## Key results
 
-- `shiftBasisAsCharges` : The basis vectors as charge assignments.
-- `shiftBasis` : The basis vectors as `LinSols`.
-- `Pshift` : The inclusion of the shifted plane into charges.
-- `Pshift_accCube` : Charges from the shifted plane satisfy the cubic ACC.
-- `Pshift'` : The inclusion of the shifted plane into linear solutions.
+- `shiftPlane_accCube` : Charges from the shifted plane satisfy the cubic ACC.
+- `shiftBasis_linear_independent` : The shifted basis vectors are linearly independent.
+- `symmPlane_symmPlane_shiftBasisAsCharges_accCube` : The mixed cubic ACC from points in both
+  planes.
+
+## Table of contents
+
+- A.2. The shifted split: Splitting the charges up via `1 + n + n`
+- A.3. The shifted shifted split: Splitting the charges up via `((1+n)+1) + n.succ`
+- A.4. Relating the splittings together
+- C. The second plane (shifted plane)
+  - C.1. The basis vectors of the shifted plane as charges
+  - C.2. Components of the basis vectors as charges
+  - C.3. The basis vectors satisfy the linear ACCs
+  - C.4. The basis vectors as `LinSols`
+  - C.5. Permutations equal adding basis vectors
+  - C.6. The inclusion of the shifted plane into charges
+  - C.7. Components of the shifted plane
+  - C.8. Points on the shifted plane satisfy the ACCs
+  - C.9. Kernel of the inclusion into charges
+  - C.10. The inclusion of the shifted plane into LinSols
+  - C.11. The basis vectors are linearly independent
+- D. The mixed cubic ACC from points in both planes
+
 -/
 
 @[expose] public section
@@ -33,9 +61,139 @@ variable {n : ℕ}
 
 namespace VectorLikeOddPlane
 
+section theDeltas
+
 /-!
 
-## C. The shifted plane
+### A.2. The shifted split: Spltting the charges up via `1 + n + n`
+
+-/
+
+/-- The inclusion of `Fin n` into `Fin (1 + n + n)` via the first `n`.
+  This is then casted to `Fin (2 * n + 1)`. -/
+def oddShiftFst (j : Fin n) : Fin (2 * n + 1) :=
+  Fin.cast (odd_shift_eq n) (Fin.castAdd n (Fin.natAdd 1 j))
+
+/-- The inclusion of `Fin n` into `Fin (1 + n + n)` via the second `n`.
+  This is then casted to `Fin (2 * n + 1)`. -/
+def oddShiftSnd (j : Fin n) : Fin (2 * n + 1) :=
+  Fin.cast (odd_shift_eq n) (Fin.natAdd (1 + n) j)
+
+/-- The element representing the `1` in `Fin (1 + n + n)`.
+  This is then casted to `Fin (2 * n + 1)`. -/
+def oddShiftZero : Fin (2 * n + 1) :=
+  Fin.cast (odd_shift_eq n) (Fin.castAdd n (Fin.castAdd n 1))
+
+lemma sum_oddShift (S : Fin (2 * n + 1) → ℚ) :
+    ∑ i, S i = S oddShiftZero + ∑ i : Fin n, ((S ∘ oddShiftFst) i + (S ∘ oddShiftSnd) i) := by
+  have h1 : ∑ i, S i = ∑ i : Fin ((1+n)+n), S (Fin.cast (odd_shift_eq n) i) := by
+    rw [Finset.sum_equiv (Fin.castOrderIso (odd_shift_eq n)).symm.toEquiv]
+    · intro i
+      simp only [mem_univ, Fin.castOrderIso, RelIso.coe_fn_toEquiv]
+    · exact fun _ _ => rfl
+  rw [h1, Fin.sum_univ_add, Fin.sum_univ_add]
+  simp only [univ_unique, Fin.default_eq_zero, Fin.isValue, sum_singleton, Function.comp_apply]
+  rw [add_assoc, Finset.sum_add_distrib]
+  rfl
+
+/-!
+
+### A.3. The shifted shifted split: Spltting the charges up via `((1+n)+1) + n.succ`
+
+-/
+
+lemma odd_shift_shift_eq (n : ℕ) : ((1+n)+1) + n.succ = 2 * n.succ + 1 := by
+  omega
+
+/-- The element representing the first `1` in `Fin (1 + n + 1 + n.succ)` casted
+  to `Fin (2 * n.succ + 1)`. -/
+def oddShiftShiftZero : Fin (2 * n.succ + 1) :=
+  Fin.cast (odd_shift_shift_eq n) (Fin.castAdd n.succ (Fin.castAdd 1 (Fin.castAdd n 1)))
+
+/-- The inclusion of `Fin n` into `Fin (1 + n + 1 + n.succ)` via the first `n` and casted
+  to `Fin (2 * n.succ + 1)`. -/
+def oddShiftShiftFst (j : Fin n) : Fin (2 * n.succ + 1) :=
+  Fin.cast (odd_shift_shift_eq n) (Fin.castAdd n.succ (Fin.castAdd 1 (Fin.natAdd 1 j)))
+
+/-- The element representing the second `1` in `Fin (1 + n + 1 + n.succ)` casted
+  to `2 * n.succ + 1`. -/
+def oddShiftShiftMid : Fin (2 * n.succ + 1) :=
+  Fin.cast (odd_shift_shift_eq n) (Fin.castAdd n.succ (Fin.natAdd (1+n) 1))
+
+/-- The inclusion of `Fin n.succ` into `Fin (1 + n + 1 + n.succ)` via the `n.succ` and casted
+  to `Fin (2 * n.succ + 1)`. -/
+def oddShiftShiftSnd (j : Fin n.succ) : Fin (2 * n.succ + 1) :=
+  Fin.cast (odd_shift_shift_eq n) (Fin.natAdd ((1+n)+1) j)
+
+/-!
+
+### A.4. Relating the splittings together
+
+-/
+lemma oddShiftShiftZero_eq_oddFst_zero : @oddShiftShiftZero n = oddFst 0 :=
+  Fin.rev_inj.mp rfl
+
+lemma oddShiftShiftZero_eq_oddShiftZero : @oddShiftShiftZero n = oddShiftZero := rfl
+
+lemma oddShiftShiftFst_eq_oddFst_succ (j : Fin n) :
+    oddShiftShiftFst j = oddFst j.succ := by
+  rw [Fin.ext_iff]
+  simp only [succ_eq_add_one, oddShiftShiftFst, Fin.val_cast, Fin.val_castAdd, Fin.val_natAdd,
+    oddFst, Fin.val_succ]
+  exact Nat.add_comm 1 ↑j
+
+lemma oddShiftShiftFst_eq_oddShiftFst_castSucc (j : Fin n) :
+    oddShiftShiftFst j = oddShiftFst j.castSucc := by
+  rfl
+
+lemma oddShiftShiftMid_eq_oddMid : @oddShiftShiftMid n = oddMid := by
+  rw [Fin.ext_iff]
+  simp only [succ_eq_add_one, oddShiftShiftMid, Fin.isValue, Fin.val_cast, Fin.val_castAdd,
+    Fin.val_natAdd, Fin.val_eq_zero, add_zero, oddMid]
+  exact Nat.add_comm 1 n
+
+lemma oddShiftShiftMid_eq_oddShiftFst_last : oddShiftShiftMid = oddShiftFst (Fin.last n) := by
+  rfl
+
+lemma oddShiftShiftSnd_eq_oddSnd (j : Fin n.succ) : oddShiftShiftSnd j = oddSnd j := by
+  rw [Fin.ext_iff]
+  simp only [succ_eq_add_one, oddShiftShiftSnd, Fin.val_cast, Fin.val_natAdd, oddSnd, add_left_inj]
+  exact Nat.add_comm 1 n
+
+lemma oddShiftShiftSnd_eq_oddShiftSnd (j : Fin n.succ) : oddShiftShiftSnd j = oddShiftSnd j := by
+  rw [Fin.ext_iff]
+  rfl
+
+lemma oddSnd_eq_oddShiftSnd (j : Fin n) : oddSnd j = oddShiftSnd j := by
+  rw [Fin.ext_iff]
+  simp only [oddSnd, Fin.val_cast, Fin.val_natAdd, oddShiftSnd, add_left_inj]
+  exact Nat.add_comm n 1
+
+lemma oddShiftZero_eq_oddFst : oddShiftZero = oddFst (0 : Fin n.succ) := by
+  ext
+  simp [oddShiftZero, oddFst]
+
+lemma oddShiftFst_castSucc_eq_oddFst_succ (j : Fin n) :
+    oddShiftFst j.castSucc = oddFst j.succ := by
+  rw [Fin.ext_iff]
+  simp only [oddShiftFst, Fin.val_cast, Fin.val_castAdd, Fin.val_natAdd, oddFst, Fin.val_succ]
+  exact Nat.add_comm 1 ↑j
+
+lemma oddShiftFst_last_eq_oddMid : oddShiftFst (Fin.last n) = oddMid := by
+  rw [Fin.ext_iff]
+  simp only [oddShiftFst, Fin.val_cast, Fin.val_castAdd, Fin.val_natAdd, oddMid, Fin.val_last]
+  exact Nat.add_comm 1 n
+
+lemma oddShiftSnd_eq_oddSnd (j : Fin n) : oddShiftSnd j = oddSnd j := by
+  rw [Fin.ext_iff]
+  simp only [oddShiftSnd, Fin.val_cast, Fin.val_natAdd, oddSnd, add_left_inj]
+  ring
+
+end theDeltas
+
+/-!
+
+## C. The second plane (shifted plane)
 
 -/
 
@@ -62,10 +220,11 @@ def shiftBasisAsCharges (j : Fin n) : (PureU1 (2 * n + 1)).Charges :=
 
 -/
 
-lemma shiftBasis_on_oddShiftFst_self (j : Fin n) : shiftBasisAsCharges j (oddShiftFst j) = 1 := by
+lemma shiftBasisAsCharges_on_oddShiftFst_self (j : Fin n) :
+    shiftBasisAsCharges j (oddShiftFst j) = 1 := by
   simp [shiftBasisAsCharges]
 
-lemma shiftBasis_on_oddShiftFst_other {k j : Fin n} (h : k ≠ j) :
+lemma shiftBasisAsCharges_on_oddShiftFst_other {k j : Fin n} (h : k ≠ j) :
     shiftBasisAsCharges k (oddShiftFst j) = 0 := by
   simp only [shiftBasisAsCharges, PureU1_numberCharges]
   simp only [oddShiftFst, oddShiftSnd]
@@ -83,13 +242,13 @@ lemma shiftBasis_on_oddShiftFst_other {k j : Fin n} (h : k ≠ j) :
       omega
     rfl
 
-lemma shiftBasis_on_other {k : Fin n} {j : Fin (2 * n + 1)}
+lemma shiftBasisAsCharges_on_other {k : Fin n} {j : Fin (2 * n + 1)}
     (h1 : j ≠ oddShiftFst k) (h2 : j ≠ oddShiftSnd k) :
     shiftBasisAsCharges k j = 0 := by
   simp only [shiftBasisAsCharges, PureU1_numberCharges]
   simp_all only [ne_eq, ↓reduceIte]
 
-lemma shiftBasis_oddShiftSnd_eq_minus_oddShiftFst (j i : Fin n) :
+lemma shiftBasisAsCharges_oddShiftSnd_eq_minus_oddShiftFst (j i : Fin n) :
     shiftBasisAsCharges j (oddShiftSnd i) = - shiftBasisAsCharges j (oddShiftFst i) := by
   simp only [shiftBasisAsCharges, PureU1_numberCharges, oddShiftSnd, oddShiftFst]
   split <;> split
@@ -106,15 +265,19 @@ lemma shiftBasis_oddShiftSnd_eq_minus_oddShiftFst (j i : Fin n) :
   all_goals simp_all
   all_goals omega
 
-lemma shiftBasis_on_oddShiftSnd_self (j : Fin n) : shiftBasisAsCharges j (oddShiftSnd j) = - 1 := by
-  rw [shiftBasis_oddShiftSnd_eq_minus_oddShiftFst, shiftBasis_on_oddShiftFst_self]
+lemma shiftBasisAsCharges_on_oddShiftSnd_self (j : Fin n) :
+    shiftBasisAsCharges j (oddShiftSnd j) = - 1 := by
+  rw [shiftBasisAsCharges_oddShiftSnd_eq_minus_oddShiftFst,
+    shiftBasisAsCharges_on_oddShiftFst_self]
 
-lemma shiftBasis_on_oddShiftSnd_other {k j : Fin n} (h : k ≠ j) :
+lemma shiftBasisAsCharges_on_oddShiftSnd_other {k j : Fin n} (h : k ≠ j) :
     shiftBasisAsCharges k (oddShiftSnd j) = 0 := by
-  rw [shiftBasis_oddShiftSnd_eq_minus_oddShiftFst, shiftBasis_on_oddShiftFst_other h]
+  rw [shiftBasisAsCharges_oddShiftSnd_eq_minus_oddShiftFst,
+    shiftBasisAsCharges_on_oddShiftFst_other h]
   rfl
 
-lemma shiftBasis_on_oddShiftZero (j : Fin n) : shiftBasisAsCharges j oddShiftZero = 0 := by
+lemma shiftBasisAsCharges_on_oddShiftZero (j : Fin n) :
+    shiftBasisAsCharges j oddShiftZero = 0 := by
   simp only [shiftBasisAsCharges, PureU1_numberCharges]
   split <;> rename_i h
   · rw [Fin.ext_iff] at h
@@ -134,11 +297,12 @@ lemma shiftBasis_on_oddShiftZero (j : Fin n) : shiftBasisAsCharges j oddShiftZer
 
 -/
 
-lemma shiftBasis_linearACC (j : Fin n) : (accGrav (2 * n + 1)) (shiftBasisAsCharges j) = 0 := by
+lemma shiftBasisAsCharges_linearACC (j : Fin n) :
+    (accGrav (2 * n + 1)) (shiftBasisAsCharges j) = 0 := by
   rw [accGrav]
   simp only [LinearMap.coe_mk, AddHom.coe_mk]
-  rw [sum_oddShift, shiftBasis_on_oddShiftZero]
-  simp [shiftBasis_oddShiftSnd_eq_minus_oddShiftFst]
+  rw [sum_oddShift, shiftBasisAsCharges_on_oddShiftZero]
+  simp [shiftBasisAsCharges_oddShiftSnd_eq_minus_oddShiftFst]
 
 /-!
 
@@ -154,7 +318,7 @@ def shiftBasis (j : Fin n) : (PureU1 (2 * n + 1)).LinSols :=
     simp only [PureU1_numberLinear] at i
     match i with
     | 0 =>
-    exact shiftBasis_linearACC j⟩
+    exact shiftBasisAsCharges_linearACC j⟩
 
 /-!
 
@@ -167,18 +331,19 @@ def shiftBasis (j : Fin n) : (PureU1 (2 * n + 1)).LinSols :=
 lemma swapShift_as_add {S S' : (PureU1 (2 * n + 1)).LinSols} (j : Fin n)
     (hS : ((FamilyPermutations (2 * n + 1)).linSolRep
     (Equiv.swap (oddShiftFst j) (oddShiftSnd j))) S = S') :
-    S'.val = S.val + (S.val (oddShiftSnd j) - S.val (oddShiftFst j)) • shiftBasisAsCharges j := by
+    S'.val = S.val + (S.val (oddShiftSnd j) - S.val (oddShiftFst j)) •
+      shiftBasisAsCharges j := by
   funext i
   rw [← hS, FamilyPermutations_anomalyFreeLinear_apply]
   by_cases hi : i = oddShiftFst j
   · subst hi
-    simp [HSMul.hSMul, shiftBasis_on_oddShiftFst_self, Equiv.swap_apply_left]
+    simp [HSMul.hSMul, shiftBasisAsCharges_on_oddShiftFst_self, Equiv.swap_apply_left]
   · by_cases hi2 : i = oddShiftSnd j
     · subst hi2
-      simp [HSMul.hSMul, shiftBasis_on_oddShiftSnd_self, Equiv.swap_apply_right]
+      simp [HSMul.hSMul, shiftBasisAsCharges_on_oddShiftSnd_self, Equiv.swap_apply_right]
     · simp only [Equiv.invFun_as_coe, HSMul.hSMul, ACCSystemCharges.chargesAddCommMonoid_add,
         ACCSystemCharges.chargesModule_smul]
-      rw [shiftBasis_on_other hi hi2]
+      rw [shiftBasisAsCharges_on_other hi hi2]
       aesop
 
 /-!
@@ -188,7 +353,8 @@ lemma swapShift_as_add {S S' : (PureU1 (2 * n + 1)).LinSols} (j : Fin n)
 -/
 
 /-- A point in the span of the shifted plane basis as a charge. -/
-def Pshift (f : Fin n → ℚ) : (PureU1 (2 * n + 1)).Charges := ∑ i, f i • shiftBasisAsCharges i
+def shiftPlane (f : Fin n → ℚ) : (PureU1 (2 * n + 1)).Charges :=
+  ∑ i, f i • shiftBasisAsCharges i
 
 /-!
 
@@ -196,31 +362,33 @@ def Pshift (f : Fin n → ℚ) : (PureU1 (2 * n + 1)).Charges := ∑ i, f i • 
 
 -/
 
-lemma Pshift_oddShiftFst (f : Fin n → ℚ) (j : Fin n) : Pshift f (oddShiftFst j) = f j := by
-  rw [Pshift, sum_of_charges]
+lemma shiftPlane_oddShiftFst (f : Fin n → ℚ) (j : Fin n) :
+    shiftPlane f (oddShiftFst j) = f j := by
+  rw [shiftPlane, sum_of_charges]
   simp only [HSMul.hSMul, SMul.smul]
   rw [Finset.sum_eq_single j]
-  · rw [shiftBasis_on_oddShiftFst_self]
+  · rw [shiftBasisAsCharges_on_oddShiftFst_self]
     exact Rat.mul_one (f j)
   · intro k _ hkj
-    rw [shiftBasis_on_oddShiftFst_other hkj]
+    rw [shiftBasisAsCharges_on_oddShiftFst_other hkj]
     exact Rat.mul_zero (f k)
   · simp only [mem_univ, not_true_eq_false, _root_.mul_eq_zero, IsEmpty.forall_iff]
 
-lemma Pshift_oddShiftSnd (f : Fin n → ℚ) (j : Fin n) : Pshift f (oddShiftSnd j) = - f j := by
-  rw [Pshift, sum_of_charges]
+lemma shiftPlane_oddShiftSnd (f : Fin n → ℚ) (j : Fin n) :
+    shiftPlane f (oddShiftSnd j) = - f j := by
+  rw [shiftPlane, sum_of_charges]
   simp only [HSMul.hSMul, SMul.smul]
   rw [Finset.sum_eq_single j]
-  · rw [shiftBasis_on_oddShiftSnd_self]
+  · rw [shiftBasisAsCharges_on_oddShiftSnd_self]
     exact mul_neg_one (f j)
   · intro k _ hkj
-    rw [shiftBasis_on_oddShiftSnd_other hkj]
+    rw [shiftBasisAsCharges_on_oddShiftSnd_other hkj]
     exact Rat.mul_zero (f k)
   · simp
 
-lemma Pshift_oddShiftZero (f : Fin n → ℚ) : Pshift f oddShiftZero = 0 := by
-  rw [Pshift, sum_of_charges]
-  simp [HSMul.hSMul, SMul.smul, shiftBasis_on_oddShiftZero]
+lemma shiftPlane_oddShiftZero (f : Fin n → ℚ) : shiftPlane f oddShiftZero = 0 := by
+  rw [shiftPlane, sum_of_charges]
+  simp [HSMul.hSMul, SMul.smul, shiftBasisAsCharges_on_oddShiftZero]
 
 /-!
 
@@ -228,19 +396,21 @@ lemma Pshift_oddShiftZero (f : Fin n → ℚ) : Pshift f oddShiftZero = 0 := by
 
 -/
 
-lemma Pshift_linearACC (f : Fin n → ℚ) : (accGrav (2 * n + 1)) (Pshift f) = 0 := by
+lemma shiftPlane_linearACC (f : Fin n → ℚ) :
+    (accGrav (2 * n + 1)) (shiftPlane f) = 0 := by
   rw [accGrav]
   simp only [LinearMap.coe_mk, AddHom.coe_mk]
   rw [sum_oddShift]
-  simp [Pshift_oddShiftSnd, Pshift_oddShiftFst, Pshift_oddShiftZero]
+  simp [shiftPlane_oddShiftSnd, shiftPlane_oddShiftFst, shiftPlane_oddShiftZero]
 
 set_option backward.isDefEq.respectTransparency false in
-lemma Pshift_accCube (f : Fin n → ℚ) : accCube (2 * n +1) (Pshift f) = 0 := by
-  rw [accCube_explicit, sum_oddShift, Pshift_oddShiftZero]
-  simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, Function.comp_apply, zero_add]
+lemma shiftPlane_accCube (f : Fin n → ℚ) : accCube (2 * n +1) (shiftPlane f) = 0 := by
+  rw [accCube_explicit, sum_oddShift, shiftPlane_oddShiftZero]
+  simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, Function.comp_apply,
+    zero_add]
   apply Finset.sum_eq_zero
   intro i _
-  simp only [Pshift_oddShiftFst, Pshift_oddShiftSnd]
+  simp only [shiftPlane_oddShiftFst, shiftPlane_oddShiftSnd]
   ring
 
 /-!
@@ -249,9 +419,9 @@ lemma Pshift_accCube (f : Fin n → ℚ) : accCube (2 * n +1) (Pshift f) = 0 := 
 
 -/
 
-lemma Pshift_zero (f : Fin n → ℚ) (h : Pshift f = 0) : ∀ i, f i = 0 := by
+lemma shiftPlane_zero (f : Fin n → ℚ) (h : shiftPlane f = 0) : ∀ i, f i = 0 := by
   intro i
-  rw [← Pshift_oddShiftFst f]
+  rw [← shiftPlane_oddShiftFst f]
   rw [h]
   rfl
 
@@ -262,10 +432,12 @@ lemma Pshift_zero (f : Fin n → ℚ) (h : Pshift f = 0) : ∀ i, f i = 0 := by
 -/
 
 /-- A point in the span of the shifted plane basis. -/
-def Pshift' (f : Fin n → ℚ) : (PureU1 (2 * n + 1)).LinSols := ∑ i, f i • shiftBasis i
+def shiftPlaneLinSols (f : Fin n → ℚ) : (PureU1 (2 * n + 1)).LinSols :=
+  ∑ i, f i • shiftBasis i
 
-lemma Pshift'_val (f : Fin n → ℚ) : (Pshift' f).val = Pshift f := by
-  simp only [Pshift', Pshift]
+lemma shiftPlaneLinSols_val (f : Fin n → ℚ) :
+    (shiftPlaneLinSols f).val = shiftPlane f := by
+  simp only [shiftPlaneLinSols, shiftPlane]
   funext i
   rw [sum_of_anomaly_free_linear, sum_of_charges]
   rfl
@@ -279,13 +451,36 @@ lemma Pshift'_val (f : Fin n → ℚ) : (Pshift' f).val = Pshift f := by
 theorem shiftBasis_linear_independent : LinearIndependent ℚ (@shiftBasis n) := by
   apply Fintype.linearIndependent_iff.mpr
   intro f h
-  change Pshift' f = 0 at h
-  have h1 : (Pshift' f).val = 0 :=
+  change shiftPlaneLinSols f = 0 at h
+  have h1 : (shiftPlaneLinSols f).val = 0 :=
     (AddSemiconjBy.eq_zero_iff (ACCSystemLinear.LinSols.val 0)
     (congrFun (congrArg HAdd.hAdd (congrArg ACCSystemLinear.LinSols.val (id (Eq.symm h))))
     (ACCSystemLinear.LinSols.val 0))).mp rfl
-  rw [Pshift'_val] at h1
-  exact Pshift_zero f h1
+  rw [shiftPlaneLinSols_val] at h1
+  exact shiftPlane_zero f h1
+
+/-!
+
+## D. The mixed cubic ACC from points in both planes
+
+-/
+
+set_option backward.isDefEq.respectTransparency false in
+lemma symmPlane_symmPlane_shiftBasisAsCharges_accCube (g : Fin n → ℚ) (j : Fin n) :
+    accCubeTriLinSymm (symmPlane g) (symmPlane g) (shiftBasisAsCharges j)
+    = (symmPlane g (oddShiftFst j))^2 - (g j)^2 := by
+  simp only [accCubeTriLinSymm, PureU1Charges_numberCharges, TriLinearSymm.mk₃_toFun_apply_apply]
+  rw [sum_oddShift, shiftBasisAsCharges_on_oddShiftZero]
+  simp only [mul_zero, Function.comp_apply, zero_add]
+  rw [Finset.sum_eq_single j, shiftBasisAsCharges_on_oddShiftFst_self,
+    shiftBasisAsCharges_on_oddShiftSnd_self]
+  · rw [← oddSnd_eq_oddShiftSnd, symmPlane_oddSnd]
+    ring
+  · intro k _ hkj
+    erw [shiftBasisAsCharges_on_oddShiftFst_other hkj.symm,
+      shiftBasisAsCharges_on_oddShiftSnd_other hkj.symm]
+    simp only [mul_zero, add_zero]
+  · simp
 
 end VectorLikeOddPlane
 
