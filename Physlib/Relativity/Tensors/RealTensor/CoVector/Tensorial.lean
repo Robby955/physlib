@@ -80,7 +80,7 @@ lemma toTensor_symm_pure {d : ℕ} (p : Pure (realLorentzTensor d) ![.down]) (i 
 
 /-!
 
-## Poperties of the basis.
+## Properties of the basis.
 
 -/
 
