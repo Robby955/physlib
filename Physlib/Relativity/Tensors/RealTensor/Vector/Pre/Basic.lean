@@ -40,6 +40,27 @@ lemma contrBasis_ρ_apply {d : ℕ} (M : LorentzGroup d) (i j : Fin 1 ⊕ Fin d)
   change (M.1 *ᵥ (Pi.single j 1)) i = _
   simp
 
+attribute [-simp] Fintype.sum_sum_type
+
+lemma contrBasis_apply {d : ℕ} (i j : Fin 1 ⊕ Fin d) :
+    (contrBasis d i).val j = (if j = i then 1 else 0) := by
+  simp [contrBasis, ContrMod.toFin1dℝEquiv]
+  change Pi.single i 1 j = _
+  simp [Pi.single_apply]
+
+ lemma ρ_contrBasis (d : ℕ) (M : LorentzGroup d) (μ : Fin 1 ⊕ Fin d) :
+    (Contr d).ρ M (contrBasis d μ) = ∑ j, M.1 j μ • contrBasis d j := by
+  change M *ᵥ contrBasis d μ = ∑ j, M.1 j μ • contrBasis d j
+  apply ContrMod.ext
+  ext i
+  simp
+  erw [ContrMod.val_sum]
+  simp [mulVec_eq_sum]
+  conv_rhs =>
+    enter [2, c]
+    erw [ContrMod.val_smul]
+  simp [contrBasis_apply]
+
 @[simp]
 lemma contrBasis_toFin1dℝ {d : ℕ} (i : Fin 1 ⊕ Fin d) :
     (contrBasis d i).toFin1dℝ = Pi.single i 1 := by
@@ -57,6 +78,12 @@ lemma contrBasisFin_toFin1dℝ {d : ℕ} (i : Fin (1 + d)) :
 
 lemma contrBasisFin_repr_apply {d : ℕ} (p : Contr d) (i : Fin (1 + d)) :
     (contrBasisFin d).repr p i = p.val (finSumFinEquiv.symm i) := by rfl
+
+ lemma ρ_contrBasisFin (d : ℕ) (M : LorentzGroup d) (μ : Fin (1 + d)) :
+    (Contr d).ρ M (contrBasisFin d μ) =
+      ∑ j, M.1 (finSumFinEquiv.symm j) (finSumFinEquiv.symm μ) • contrBasisFin d j := by
+  simp [contrBasisFin, ρ_contrBasis]
+  rw [← finSumFinEquiv.symm.sum_comp]
 
 /-- The representation of contravariant Lorentz vectors forms a topological space, induced
   by its equivalence to `Fin 1 ⊕ Fin d → ℝ`. -/
@@ -79,9 +106,27 @@ lemma contr_continuous {T : Type} [TopologicalSpace T] (f : Contr d → T)
   Lorentz vectors. In index notation these have an up index `ψⁱ`. -/
 def Co (d : ℕ) : Rep ℝ (LorentzGroup d) := Rep.of CoMod.rep
 
+
+lemma Co.ρ_eq_mulVec (d : ℕ) (M : LorentzGroup d) (ψ : Co d) :
+    (Co d).ρ M ψ =  M⁻¹ᵀ *ᵥ ψ := by
+  apply CoMod.ext
+  ext i
+  simp [Co]
+  erw [CoMod.rep_apply]
+  simp [LorentzGroup.transpose]
+  congr
+  exact LorentzGroup.coe_inv
+
 /-- The standard basis of contravariant Lorentz vectors. -/
 def coBasis (d : ℕ := 3) : Basis (Fin 1 ⊕ Fin d) ℝ (Co d) :=
   Basis.ofEquivFun CoMod.toFin1dℝEquiv
+
+
+lemma coBasis_apply {d : ℕ} (i j : Fin 1 ⊕ Fin d) :
+    (coBasis d i).val j = (if j = i then 1 else 0) := by
+  simp [coBasis, CoMod.toFin1dℝEquiv]
+  change Pi.single i 1 j = _
+  simp [Pi.single_apply]
 
 @[simp]
 lemma coBasis_ρ_apply {d : ℕ} (M : LorentzGroup d) (i j : Fin 1 ⊕ Fin d) :
@@ -91,6 +136,20 @@ lemma coBasis_ρ_apply {d : ℕ} (M : LorentzGroup d) (i j : Fin 1 ⊕ Fin d) :
   simp only [coBasis, Basis.coe_ofEquivFun, Basis.ofEquivFun_repr_apply, transpose_apply]
   change (_ *ᵥ (Pi.single j 1)) i = _
   simp [LorentzGroup.transpose, ← LorentzGroup.coe_inv]
+
+lemma ρ_coBasis (d : ℕ) (M : LorentzGroup d) (μ : Fin 1 ⊕ Fin d) :
+    (Co d).ρ M (coBasis d μ) = ∑ j, (M⁻¹ᵀ j μ : ℝ) • coBasis d j := by
+  rw [Co.ρ_eq_mulVec]
+  change M⁻¹ᵀ *ᵥ coBasis d μ = ∑ j, (M⁻¹ᵀ j μ : ℝ) • coBasis d j
+  apply CoMod.ext
+  ext i
+  simp
+  erw [CoMod.val_sum]
+  simp [mulVec_eq_sum]
+  conv_rhs =>
+    enter [2, c]
+    erw [CoMod.val_smul]
+  simp [coBasis_apply]
 
 @[simp]
 lemma coBasis_toFin1dℝ {d : ℕ} (i : Fin 1 ⊕ Fin d) :
@@ -109,6 +168,12 @@ lemma coBasisFin_toFin1dℝ {d : ℕ} (i : Fin (1 + d)) :
 
 lemma coBasisFin_repr_apply {d : ℕ} (p : Co d) (i : Fin (1 + d)) :
     (coBasisFin d).repr p i = p.val (finSumFinEquiv.symm i) := by rfl
+
+lemma ρ_coBasisFin (d : ℕ) (M : LorentzGroup d) (μ : Fin (1 + d)) :
+    (Co d).ρ M (coBasisFin d μ) =
+      ∑ j, (M⁻¹ᵀ (finSumFinEquiv.symm j) (finSumFinEquiv.symm μ) : ℝ) • coBasisFin d j := by
+  simp [coBasisFin, ρ_coBasis]
+  rw [← finSumFinEquiv.symm.sum_comp]
 
 open CategoryTheory.MonoidalCategory
 

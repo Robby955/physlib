@@ -406,6 +406,12 @@ lemma induction_on_basis {n : ℕ} {c : Fin n → C} {P : S.Tensor c → Prop}
 
 end Basis
 
+lemma Pure.toTensor_basis {n : ℕ} (c : Fin n → C) (p : Pure S c) :
+    p.toTensor = ∑ b, p.component b • (basis c b) := by
+  apply (basis c).repr.injective
+  ext b
+  simp [basis_repr_pure, Finsupp.single_apply]
+
 /-!
 
 ## The rank

@@ -9,6 +9,7 @@ public import Physlib.Relativity.PauliMatrices.SelfAdjoint
 public import Mathlib.RepresentationTheory.Basic
 public import Physlib.Relativity.LorentzGroup.Basic
 public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Tactic.Cases
 /-!
 
 ## Modules associated with Real Lorentz vectors
@@ -67,6 +68,14 @@ lemma val_add (ψ ψ' : ContrMod d) : (ψ + ψ').val = ψ.val + ψ'.val := rfl
 
 @[simp]
 lemma val_smul (r : ℝ) (ψ : ContrMod d) : (r • ψ).val = r • ψ.val := rfl
+
+@[simp]
+lemma val_sum {ι : Type} [ DecidableEq ι] (s : Finset ι) (f : ι → ContrMod d) :
+    (∑ i ∈ s, f i).val = ∑ i ∈ s, (f i).val := by
+  induction' s using Finset.induction with i s hi ih
+  · simp
+    rfl
+  · rw [Finset.sum_insert hi, Finset.sum_insert hi, val_add, ih]
 
 /-- The linear equivalence between `ContrℝModule` and `(Fin 1 ⊕ Fin d → ℝ)`. -/
 def toFin1dℝEquiv : ContrMod d ≃ₗ[ℝ] (Fin 1 ⊕ Fin d → ℝ) :=
@@ -342,6 +351,17 @@ instance : AddCommGroup (CoMod d) := Equiv.addCommGroup toFin1dℝFun
   with `Fin 1 ⊕ Fin d → ℝ`. -/
 instance : Module ℝ (CoMod d) := Equiv.module ℝ toFin1dℝFun
 
+lemma val_add (ψ ψ' : CoMod d) : (ψ + ψ').val = ψ.val + ψ'.val := rfl
+
+lemma val_smul (r : ℝ) (ψ : CoMod d) : (r • ψ).val = r • ψ.val := rfl
+
+lemma val_sum {ι : Type} [ DecidableEq ι] (s : Finset ι) (f : ι → CoMod d) :
+    (∑ i ∈ s, f i).val = ∑ i ∈ s, (f i).val := by
+  induction' s using Finset.induction with i s hi ih
+  · simp
+    rfl
+  · rw [Finset.sum_insert hi, Finset.sum_insert hi, val_add, ih]
+
 /-- The linear equivalence between `CoℝModule` and `(Fin 1 ⊕ Fin d → ℝ)`. -/
 def toFin1dℝEquiv : CoMod d ≃ₗ[ℝ] (Fin 1 ⊕ Fin d → ℝ) :=
   Equiv.linearEquiv ℝ toFin1dℝFun
@@ -435,6 +455,10 @@ def rep : Representation ℝ (LorentzGroup d) (CoMod d) where
   map_mul' x y := by
     simp only [_root_.mul_inv_rev, LorentzGroup.inv_eq_dual, LorentzGroup.transpose_mul,
       lorentzGroupIsGroup_mul_coe, _root_.map_mul]
+
+lemma rep_apply (g : LorentzGroup d) (ψ : CoMod d) :
+    (rep g ψ) = Matrix.toLinAlgEquiv stdBasis (LorentzGroup.transpose g⁻¹) ψ := by
+  rfl
 
 end CoMod
 

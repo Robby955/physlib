@@ -216,5 +216,14 @@ lemma SL2CRep_ρ_basis (M : SL(2, ℂ)) (i : Fin 1 ⊕ Fin 3) :
   simp only [LinearMap.map_smulₛₗ, ofRealHom_eq_coe, coe_smul]
   rw [complexContrBasis_of_real]
 
+lemma ρ_complexContrBasisFin4 (M : SL(2, ℂ)) (i : Fin 4) :
+    (complexContr.ρ M) (complexContrBasisFin4 i) =
+    ∑ j, (SL2C.toLorentzGroup M).1 (finSumFinEquiv.symm j) (finSumFinEquiv.symm i) •
+    complexContrBasisFin4 j := by
+  rw [complexContrBasisFin4_eq_reindex]
+  simp only [Nat.reduceAdd, Basis.coe_reindex, Function.comp_apply, SL2C.toLorentzGroup_apply_coe]
+  rw [SL2CRep_ρ_basis, ← finSumFinEquiv.symm.sum_comp]
+  rfl
+
 end Lorentz
 end
