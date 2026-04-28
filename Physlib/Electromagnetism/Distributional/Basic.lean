@@ -76,10 +76,11 @@ through `S` itself is not directly accessible in the framework, since a perfectl
 it can be recovered as a limit of weighted fluxes over progressively sharper test functions.
 
 In this setting, Gauss's law states precisely that the flux with weighting
-`φ` equals the charge measured with the same weighting `φ`. Notionally this is
-`- ∫ E x · ∇ φ x dx = ∫ ρ x φ x dx`.
+`φ` equals the charge measured with the same weighting `φ` (with
+an additional factor of `1/ε₀`). Notionally this is
+`- ∫ E x · ∇ φ x dx = ∫ ρ x φ x dx / ε₀`.
 In the distributional setting, this 'integral' form of Gauss's law
-is exactly equivalent to the differential form `∇ · E = ρ`,
+is exactly equivalent to the differential form `∇ · E = ρ / ε₀`,
 due to the way derivatives are defined by integration by parts.
 
 -/
