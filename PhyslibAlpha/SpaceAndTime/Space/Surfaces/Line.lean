@@ -89,7 +89,9 @@ instance lineMeasure_hasTemperateGrowth (d : ℕ) :
 
 -/
 
-/-- The distribution on `Space d.succ.succ` corresponding to integration along a coordinate line. -/
+/-- The distribution on `Space d.succ.succ` corresponding to integration along a coordinate line.
+  One can roughly think of this distribution as taking a test function `f` to its integral against
+  a mass, charge or current density concentrated on a line. -/
 def lineDist (d : ℕ) : (Space d.succ.succ) →d[ℝ] ℝ :=
   SchwartzMap.integralCLM ℝ (lineMeasure d)
 
