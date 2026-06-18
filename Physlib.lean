@@ -69,6 +69,7 @@ public import Physlib.Mathematics.Calculus.AdjFDeriv
 public import Physlib.Mathematics.Calculus.Divergence
 public import Physlib.Mathematics.Calculus.ParametricIntegration
 public import Physlib.Mathematics.Calculus.Wirtinger.Basic
+public import Physlib.Mathematics.Calculus.Wirtinger.Coordinate
 public import Physlib.Mathematics.DataStructures.FourTree.Basic
 public import Physlib.Mathematics.DataStructures.FourTree.UniqueMap
 public import Physlib.Mathematics.DataStructures.Matrix.LieTrace
@@ -155,6 +156,7 @@ public import Physlib.Particles.StandardModel.AnomalyCancellation.NoGrav.One.Lin
 public import Physlib.Particles.StandardModel.AnomalyCancellation.Permutations
 public import Physlib.Particles.StandardModel.Basic
 public import Physlib.Particles.StandardModel.HiggsBoson.Basic
+public import Physlib.Particles.StandardModel.HiggsBoson.EffectivePotential
 public import Physlib.Particles.StandardModel.HiggsBoson.Potential
 public import Physlib.Particles.StandardModel.Representations
 public import Physlib.Particles.SuperSymmetry.MSSMNu.AnomalyCancellation.B3
@@ -265,6 +267,7 @@ public import Physlib.QuantumMechanics.DDimensions.Operators.Momentum
 public import Physlib.QuantumMechanics.DDimensions.Operators.Multiplication
 public import Physlib.QuantumMechanics.DDimensions.Operators.Position
 public import Physlib.QuantumMechanics.DDimensions.Operators.SpectralTheory.Basic
+public import Physlib.QuantumMechanics.DDimensions.Operators.SpectralTheory.Symmetric
 public import Physlib.QuantumMechanics.DDimensions.Operators.StateObservables.ExpectedValue
 public import Physlib.QuantumMechanics.DDimensions.Operators.StateObservables.IsEigenvector
 public import Physlib.QuantumMechanics.DDimensions.Operators.StateObservables.Variance
@@ -391,6 +394,7 @@ public import Physlib.SpaceAndTime.Space.Derivatives.MatrixDiv
 public import Physlib.SpaceAndTime.Space.Derivatives.MultiIndex
 public import Physlib.SpaceAndTime.Space.DistConst
 public import Physlib.SpaceAndTime.Space.DistOfFunction
+public import Physlib.SpaceAndTime.Space.EuclideanGroup.Action
 public import Physlib.SpaceAndTime.Space.EuclideanGroup.AffineGroup
 public import Physlib.SpaceAndTime.Space.EuclideanGroup.Basic
 public import Physlib.SpaceAndTime.Space.Integrals.Basic
@@ -401,6 +405,7 @@ public import Physlib.SpaceAndTime.Space.LengthUnit
 public import Physlib.SpaceAndTime.Space.Module
 public import Physlib.SpaceAndTime.Space.Norm.Basic
 public import Physlib.SpaceAndTime.Space.Norm.IteratedLaplacian
+public import Physlib.SpaceAndTime.Space.Origin
 public import Physlib.SpaceAndTime.Space.Slice
 public import Physlib.SpaceAndTime.Space.Translations
 public import Physlib.SpaceAndTime.SpaceTime.Basic
