@@ -169,6 +169,11 @@ lemma isClosedEmbedding_val {d : ℕ} :
       (Subtype.val : LorentzGroup d → Matrix (Fin 1 ⊕ Fin d) (Fin 1 ⊕ Fin d) ℝ) :=
   (isClosed d).isClosedEmbedding_subtypeVal
 
+/-!
+
+## Inverses
+
+-/
 lemma inv_eq_dual (Λ : LorentzGroup d) :
     (Λ⁻¹ : LorentzGroup d) = ⟨minkowskiMatrix.dual Λ.1, LorentzGroup.dual_mem Λ.2⟩ := by
   rfl
