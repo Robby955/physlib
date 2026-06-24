@@ -39,20 +39,7 @@ structure GalileanGroup (d : ℕ := 3) where
 
 namespace GalileanGroup
 
-/-- A spatial vector viewed as a displacement of the chosen origin in `Space d`. -/
-noncomputable def vectorToSpace (v : EuclideanSpace ℝ (Fin d)) : Space d :=
-  v +ᵥ (0 : Space d)
-
-@[simp]
-lemma vectorToSpace_apply (v : EuclideanSpace ℝ (Fin d)) (i : Fin d) :
-    vectorToSpace v i = v i := by
-  simp [vectorToSpace]
-
-@[simp]
-lemma vectorToSpace_vsub_zero (v : EuclideanSpace ℝ (Fin d)) :
-    vectorToSpace v -ᵥ (0 : Space d) = v := by
-  ext i
-  simp [vectorToSpace]
+/-! ## A. Basic support lemmas -/
 
 lemma orthogonal_smul_smul (R : Matrix.orthogonalGroup (Fin d) ℝ) (c : ℝ)
     (v : EuclideanSpace ℝ (Fin d)) :
@@ -61,104 +48,120 @@ lemma orthogonal_smul_smul (R : Matrix.orthogonalGroup (Fin d) ℝ) (c : ℝ)
     c • ((DistribMulAction.toLinearEquiv ℝ (EuclideanSpace ℝ (Fin d)) R) v)
   rw [map_smul]
 
+/-! ## B. Group operations -/
+
 /-- The identity Galilean transformation. -/
-def identity : GalileanGroup d :=
-  ⟨1, 0, 0, 0⟩
+instance : One (GalileanGroup d) where
+  one := ⟨1, 0, 0, 0⟩
+
+@[simp]
+lemma one_rotation : (1 : GalileanGroup d).rotation = 1 := rfl
+
+@[simp]
+lemma one_velocity : (1 : GalileanGroup d).velocity = 0 := rfl
+
+@[simp]
+lemma one_spaceTranslation : (1 : GalileanGroup d).spaceTranslation = 0 := rfl
+
+@[simp]
+lemma one_timeTranslation : (1 : GalileanGroup d).timeTranslation = 0 := rfl
 
 /-- The product whose action is composition: `(g * h) • tx = g • h • tx`. -/
-protected def mul (g h : GalileanGroup d) : GalileanGroup d :=
-  ⟨g.rotation * h.rotation,
-    g.rotation • h.velocity + g.velocity,
-    g.spaceTranslation + g.rotation • h.spaceTranslation + h.timeTranslation.val • g.velocity,
-    g.timeTranslation + h.timeTranslation⟩
+instance : Mul (GalileanGroup d) where
+  mul g h :=
+    ⟨g.rotation * h.rotation,
+      g.rotation • h.velocity + g.velocity,
+      g.spaceTranslation + g.rotation • h.spaceTranslation + h.timeTranslation.val • g.velocity,
+      g.timeTranslation + h.timeTranslation⟩
 
-/-- The inverse Galilean transformation. -/
-protected def inv (g : GalileanGroup d) : GalileanGroup d :=
-  ⟨g.rotation⁻¹,
-    -(g.rotation⁻¹ • g.velocity),
-    -(g.rotation⁻¹ • g.spaceTranslation) + g.timeTranslation.val • (g.rotation⁻¹ • g.velocity),
-    -g.timeTranslation⟩
-
-instance : Group (GalileanGroup d) where
-  one := identity
-  mul := GalileanGroup.mul
-  inv := GalileanGroup.inv
-  mul_assoc g h k := by
-    change GalileanGroup.mul (GalileanGroup.mul g h) k =
-      GalileanGroup.mul g (GalileanGroup.mul h k)
-    refine GalileanGroup.ext ?_ ?_ ?_ ?_
-    · simpa [GalileanGroup.mul] using (mul_assoc g.rotation h.rotation k.rotation)
-    · simp [GalileanGroup.mul, mul_smul, smul_add, add_assoc]
-    · simp only [GalileanGroup.mul, Time.add_val]
-      rw [mul_smul, smul_add, smul_add, add_smul, smul_add, orthogonal_smul_smul]
-      abel
-    · ext
-      simp [GalileanGroup.mul, Time.add_val, add_assoc]
-  one_mul g := by
-    change GalileanGroup.mul identity g = g
-    refine GalileanGroup.ext ?_ ?_ ?_ ?_
-    · simp [GalileanGroup.mul, identity]
-    · simp [GalileanGroup.mul, identity]
-    · simp [GalileanGroup.mul, identity]
-    · ext
-      simp [GalileanGroup.mul, identity]
-  mul_one g := by
-    change GalileanGroup.mul g identity = g
-    refine GalileanGroup.ext ?_ ?_ ?_ ?_
-    · simp [GalileanGroup.mul, identity]
-    · simp [GalileanGroup.mul, identity]
-    · simp [GalileanGroup.mul, identity]
-    · ext
-      simp [GalileanGroup.mul, identity]
-  inv_mul_cancel g := by
-    change GalileanGroup.mul (GalileanGroup.inv g) g = identity
-    refine GalileanGroup.ext ?_ ?_ ?_ ?_
-    · simp [GalileanGroup.mul, GalileanGroup.inv, identity]
-    · simp [GalileanGroup.mul, GalileanGroup.inv, identity, smul_neg]
-    · simp [GalileanGroup.mul, GalileanGroup.inv, identity, smul_neg, add_comm,
-        add_left_comm]
-    · ext
-      simp [GalileanGroup.mul, GalileanGroup.inv, identity]
-
-instance : Inhabited (GalileanGroup d) where
-  default := 1
-
-@[simp] lemma one_rotation : (1 : GalileanGroup d).rotation = 1 := rfl
-@[simp] lemma one_velocity : (1 : GalileanGroup d).velocity = 0 := rfl
-@[simp] lemma one_spaceTranslation : (1 : GalileanGroup d).spaceTranslation = 0 := rfl
-@[simp] lemma one_timeTranslation : (1 : GalileanGroup d).timeTranslation = 0 := rfl
-
-@[simp] lemma mul_rotation (g h : GalileanGroup d) :
+@[simp]
+lemma mul_rotation (g h : GalileanGroup d) :
     (g * h).rotation = g.rotation * h.rotation := rfl
 
-@[simp] lemma mul_velocity (g h : GalileanGroup d) :
+@[simp]
+lemma mul_velocity (g h : GalileanGroup d) :
     (g * h).velocity = g.rotation • h.velocity + g.velocity := rfl
 
-@[simp] lemma mul_spaceTranslation (g h : GalileanGroup d) :
+@[simp]
+lemma mul_spaceTranslation (g h : GalileanGroup d) :
     (g * h).spaceTranslation =
       g.spaceTranslation + g.rotation • h.spaceTranslation + h.timeTranslation.val • g.velocity :=
   rfl
 
-@[simp] lemma mul_timeTranslation (g h : GalileanGroup d) :
+@[simp]
+lemma mul_timeTranslation (g h : GalileanGroup d) :
     (g * h).timeTranslation = g.timeTranslation + h.timeTranslation := rfl
 
-@[simp] lemma inv_rotation (g : GalileanGroup d) :
+/-- The inverse Galilean transformation. -/
+instance : Inv (GalileanGroup d) where
+  inv g :=
+    ⟨g.rotation⁻¹,
+      -(g.rotation⁻¹ • g.velocity),
+      -(g.rotation⁻¹ • g.spaceTranslation) + g.timeTranslation.val • (g.rotation⁻¹ • g.velocity),
+      -g.timeTranslation⟩
+
+@[simp]
+lemma inv_rotation (g : GalileanGroup d) :
     g⁻¹.rotation = g.rotation⁻¹ := rfl
 
-@[simp] lemma inv_velocity (g : GalileanGroup d) :
+/-- The inverse boost velocity formula. -/
+@[simp]
+lemma inv_velocity (g : GalileanGroup d) :
     g⁻¹.velocity = -(g.rotation⁻¹ • g.velocity) := rfl
 
-@[simp] lemma inv_spaceTranslation (g : GalileanGroup d) :
+@[simp]
+lemma inv_spaceTranslation (g : GalileanGroup d) :
     g⁻¹.spaceTranslation =
       -(g.rotation⁻¹ • g.spaceTranslation) +
         g.timeTranslation.val • (g.rotation⁻¹ • g.velocity) := rfl
 
-@[simp] lemma inv_timeTranslation (g : GalileanGroup d) :
+@[simp]
+lemma inv_timeTranslation (g : GalileanGroup d) :
     g⁻¹.timeTranslation = -g.timeTranslation := rfl
+
+/-- The Galilean transformations form a group under composition. -/
+instance : Group (GalileanGroup d) where
+  mul_assoc g h k := by
+    refine GalileanGroup.ext ?_ ?_ ?_ ?_
+    · simpa using (mul_assoc g.rotation h.rotation k.rotation)
+    · simp [mul_smul, smul_add, add_assoc]
+    · simp only [mul_spaceTranslation, mul_rotation, mul_velocity, mul_timeTranslation,
+        Time.add_val]
+      rw [mul_smul, smul_add, smul_add, add_smul, smul_add, orthogonal_smul_smul]
+      abel
+    · ext
+      simp [Time.add_val, add_assoc]
+  one_mul g := by
+    refine GalileanGroup.ext ?_ ?_ ?_ ?_
+    · simp
+    · simp
+    · simp
+    · ext
+      simp
+  mul_one g := by
+    refine GalileanGroup.ext ?_ ?_ ?_ ?_
+    · simp
+    · simp
+    · simp
+    · ext
+      simp
+  inv_mul_cancel g := by
+    refine GalileanGroup.ext ?_ ?_ ?_ ?_
+    · simp
+    · simp
+    · simp [smul_neg, add_comm, add_left_comm]
+    · ext
+      simp
+
+instance : Inhabited (GalileanGroup d) where
+  default := 1
+
+/-! ## C. Action on time and space -/
 
 /-- The Galilean action on space at a fixed time. -/
 noncomputable def actSpace (g : GalileanGroup d) (t : Time) (x : Space d) : Space d :=
-  vectorToSpace (g.rotation • (x -ᵥ (0 : Space d)) + t.val • g.velocity + g.spaceTranslation)
+  Space.vectorToSpace
+    (g.rotation • (x -ᵥ (0 : Space d)) + t.val • g.velocity + g.spaceTranslation)
 
 /-- The Galilean action on `Time × Space d`. -/
 noncomputable def act (g : GalileanGroup d) (tx : Time × Space d) : Time × Space d :=
@@ -168,15 +171,15 @@ noncomputable instance : MulAction (GalileanGroup d) (Time × Space d) where
   smul := act
   one_smul tx := by
     rcases tx with ⟨t, x⟩
-    change act (identity : GalileanGroup d) (t, x) = (t, x)
-    ext i <;> simp [act, actSpace, identity]
+    change act (1 : GalileanGroup d) (t, x) = (t, x)
+    ext i <;> simp [act, actSpace]
   mul_smul g h tx := by
     rcases tx with ⟨t, x⟩
-    change act (GalileanGroup.mul g h) (t, x) = act g (act h (t, x))
+    change act (g * h) (t, x) = act g (act h (t, x))
     ext i
-    · simp [act, GalileanGroup.mul, Time.add_val, add_comm, add_left_comm]
-    · simp only [act, actSpace, vectorToSpace_apply, vectorToSpace_vsub_zero, GalileanGroup.mul,
-        Time.add_val]
+    · simp [act, Time.add_val, add_comm, add_left_comm]
+    · simp only [act, actSpace, Space.vectorToSpace_apply, Space.vectorToSpace_vsub_zero,
+        mul_rotation, mul_velocity, mul_spaceTranslation, mul_timeTranslation, Time.add_val]
       rw [mul_smul, smul_add, smul_add, smul_add, orthogonal_smul_smul]
       simp only [PiLp.add_apply, PiLp.smul_apply]
       ring_nf
@@ -197,20 +200,29 @@ lemma smul_mk (g : GalileanGroup d) (t : Time) (x : Space d) :
 lemma actSpace_apply (g : GalileanGroup d) (t : Time) (x : Space d) (i : Fin d) :
     g.actSpace t x i =
       (g.rotation • (x -ᵥ (0 : Space d))) i + t.val * g.velocity i + g.spaceTranslation i := by
-  simp [actSpace, vectorToSpace, add_assoc]
+  simp [actSpace, Space.vectorToSpace, add_assoc]
+
+/-! ## D. Subgroup inclusions -/
 
 /-- A Euclidean spatial transformation as a Galilean transformation with zero boost and no time
 translation. -/
 def ofEuclidean (g : EuclideanGroup d) : GalileanGroup d :=
   ⟨g.linear, 0, g.translation, 0⟩
 
-@[simp] lemma ofEuclidean_rotation (g : EuclideanGroup d) :
+@[simp]
+lemma ofEuclidean_rotation (g : EuclideanGroup d) :
     (ofEuclidean g).rotation = g.linear := rfl
-@[simp] lemma ofEuclidean_velocity (g : EuclideanGroup d) :
+
+@[simp]
+lemma ofEuclidean_velocity (g : EuclideanGroup d) :
     (ofEuclidean g).velocity = 0 := rfl
-@[simp] lemma ofEuclidean_spaceTranslation (g : EuclideanGroup d) :
+
+@[simp]
+lemma ofEuclidean_spaceTranslation (g : EuclideanGroup d) :
     (ofEuclidean g).spaceTranslation = g.translation := rfl
-@[simp] lemma ofEuclidean_timeTranslation (g : EuclideanGroup d) :
+
+@[simp]
+lemma ofEuclidean_timeTranslation (g : EuclideanGroup d) :
     (ofEuclidean g).timeTranslation = 0 := rfl
 
 /-- Inclusion of the Euclidean group into the Galilean group. -/
@@ -224,13 +236,20 @@ def euclidean.incl : EuclideanGroup d →* GalileanGroup d where
 def ofOrthogonal (R : Matrix.orthogonalGroup (Fin d) ℝ) : GalileanGroup d :=
   ⟨R, 0, 0, 0⟩
 
-@[simp] lemma ofOrthogonal_rotation (R : Matrix.orthogonalGroup (Fin d) ℝ) :
+@[simp]
+lemma ofOrthogonal_rotation (R : Matrix.orthogonalGroup (Fin d) ℝ) :
     (ofOrthogonal R).rotation = R := rfl
-@[simp] lemma ofOrthogonal_velocity (R : Matrix.orthogonalGroup (Fin d) ℝ) :
+
+@[simp]
+lemma ofOrthogonal_velocity (R : Matrix.orthogonalGroup (Fin d) ℝ) :
     (ofOrthogonal R).velocity = 0 := rfl
-@[simp] lemma ofOrthogonal_spaceTranslation (R : Matrix.orthogonalGroup (Fin d) ℝ) :
+
+@[simp]
+lemma ofOrthogonal_spaceTranslation (R : Matrix.orthogonalGroup (Fin d) ℝ) :
     (ofOrthogonal R).spaceTranslation = 0 := rfl
-@[simp] lemma ofOrthogonal_timeTranslation (R : Matrix.orthogonalGroup (Fin d) ℝ) :
+
+@[simp]
+lemma ofOrthogonal_timeTranslation (R : Matrix.orthogonalGroup (Fin d) ℝ) :
     (ofOrthogonal R).timeTranslation = 0 := rfl
 
 /-- Inclusion of the orthogonal group into the Galilean group. -/
@@ -251,13 +270,20 @@ noncomputable def rotation.incl : EuclideanGroup.RotationGroup d →* GalileanGr
 def ofSpaceTranslation (a : EuclideanSpace ℝ (Fin d)) : GalileanGroup d :=
   ⟨1, 0, a, 0⟩
 
-@[simp] lemma ofSpaceTranslation_rotation (a : EuclideanSpace ℝ (Fin d)) :
+@[simp]
+lemma ofSpaceTranslation_rotation (a : EuclideanSpace ℝ (Fin d)) :
     (ofSpaceTranslation a).rotation = 1 := rfl
-@[simp] lemma ofSpaceTranslation_velocity (a : EuclideanSpace ℝ (Fin d)) :
+
+@[simp]
+lemma ofSpaceTranslation_velocity (a : EuclideanSpace ℝ (Fin d)) :
     (ofSpaceTranslation a).velocity = 0 := rfl
-@[simp] lemma ofSpaceTranslation_spaceTranslation (a : EuclideanSpace ℝ (Fin d)) :
+
+@[simp]
+lemma ofSpaceTranslation_spaceTranslation (a : EuclideanSpace ℝ (Fin d)) :
     (ofSpaceTranslation a).spaceTranslation = a := rfl
-@[simp] lemma ofSpaceTranslation_timeTranslation (a : EuclideanSpace ℝ (Fin d)) :
+
+@[simp]
+lemma ofSpaceTranslation_timeTranslation (a : EuclideanSpace ℝ (Fin d)) :
     (ofSpaceTranslation a).timeTranslation = 0 := rfl
 
 /-- Inclusion of spatial translations into the Galilean group. -/
@@ -277,13 +303,20 @@ noncomputable def spaceTranslationGroup.incl :
 def ofTimeTranslation (b : Time) : GalileanGroup d :=
   ⟨1, 0, 0, b⟩
 
-@[simp] lemma ofTimeTranslation_rotation (b : Time) :
+@[simp]
+lemma ofTimeTranslation_rotation (b : Time) :
     (ofTimeTranslation (d := d) b).rotation = 1 := rfl
-@[simp] lemma ofTimeTranslation_velocity (b : Time) :
+
+@[simp]
+lemma ofTimeTranslation_velocity (b : Time) :
     (ofTimeTranslation (d := d) b).velocity = 0 := rfl
-@[simp] lemma ofTimeTranslation_spaceTranslation (b : Time) :
+
+@[simp]
+lemma ofTimeTranslation_spaceTranslation (b : Time) :
     (ofTimeTranslation (d := d) b).spaceTranslation = 0 := rfl
-@[simp] lemma ofTimeTranslation_timeTranslation (b : Time) :
+
+@[simp]
+lemma ofTimeTranslation_timeTranslation (b : Time) :
     (ofTimeTranslation (d := d) b).timeTranslation = b := rfl
 
 /-- Inclusion of time translations into the Galilean group. -/
