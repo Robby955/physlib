@@ -71,6 +71,7 @@ public import Physlib.FluidDynamics.FluidState
 public import Physlib.FluidDynamics.NavierStokes.Basic
 public import Physlib.FluidDynamics.NavierStokes.Continuity
 public import Physlib.FluidDynamics.NavierStokes.Momentum
+public import Physlib.FluidDynamics.Pressure
 public import Physlib.Mathematics.Calculus.AdjFDeriv
 public import Physlib.Mathematics.Calculus.Divergence
 public import Physlib.Mathematics.Calculus.ParametricIntegration
