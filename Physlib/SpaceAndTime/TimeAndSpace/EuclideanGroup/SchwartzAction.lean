@@ -5,6 +5,7 @@ Authors: Rob Sneiderman
 -/
 module
 
+public import Mathlib.RepresentationTheory.Continuous.Basic
 public import Physlib.SpaceAndTime.TimeAndSpace.EuclideanGroup.Action
 /-!
 
@@ -18,8 +19,8 @@ In this file we define the pullback action of the Euclidean group on Schwartz ma
 
 ## ii. Key results
 
-- `TimeAndSpace.schwartzEuclideanAction` : The Euclidean group action on Schwartz maps as a monoid
-  homomorphism into continuous linear maps.
+- `TimeAndSpace.schwartzEuclideanAction` : The Euclidean group action on Schwartz maps as a
+  continuous representation (`ContRepresentation`).
 - `TimeAndSpace.instMulActionSchwartzMap` : The induced `MulAction` instance on Schwartz maps.
 - `TimeAndSpace.smul_schwartzMap_apply` : Pointwise formula for the action.
 
@@ -48,14 +49,16 @@ variable {d : ℕ}
 
 variable {F : Type} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The Euclidean-group pullback action on Schwartz maps over `TimeAndSpace d`.
+/-- The Euclidean-group pullback action on Schwartz maps over `TimeAndSpace d`, as a continuous
+representation `ContRepresentation ℝ (EuclideanGroup d) 𝓢(TimeAndSpace d, F)`.
 
-This is a monoid homomorphism into the *continuous*-linear maps `→L[ℝ]` rather than a mathlib
-`Representation` (`G →* V →ₗ[ℝ] V`): the builder `SchwartzMap.compCLMOfAntilipschitz`
-already yields a continuous-linear map for free, and keeping the `→L` codomain lets the
-action compose under `∘L`, matching the sibling Lorentz action. -/
+`ContRepresentation R G V` unfolds to the monoid homomorphism `G →* V →L[R] V` into the
+*continuous*-linear maps: the builder `SchwartzMap.compCLMOfAntilipschitz` already yields a
+continuous-linear map for free, and the `→L` codomain lets the action compose under `∘L`. The
+plain mathlib `Representation` (`G →* V →ₗ[ℝ] V`) is recovered via
+`ContRepresentation.toRepresentation`. -/
 noncomputable def schwartzEuclideanAction {d : ℕ} :
-    EuclideanGroup d →* 𝓢(TimeAndSpace d, F) →L[ℝ] 𝓢(TimeAndSpace d, F) where
+    ContRepresentation ℝ (EuclideanGroup d) 𝓢(TimeAndSpace d, F) where
   toFun g := SchwartzMap.compCLMOfAntilipschitz (𝕜 := ℝ)
     (g := fun tx : TimeAndSpace d => g⁻¹ • tx)
     (TimeAndSpace.smul_hasTemperateGrowth g⁻¹)
