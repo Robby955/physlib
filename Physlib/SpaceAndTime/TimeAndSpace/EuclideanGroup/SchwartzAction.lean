@@ -18,15 +18,14 @@ In this file we define the pullback action of the Euclidean group on Schwartz ma
 
 ## ii. Key results
 
-- `TimeAndSpace.schwartzAction` : The Euclidean group action on Schwartz maps as a monoid
+- `TimeAndSpace.schwartzEuclideanAction` : The Euclidean group action on Schwartz maps as a monoid
   homomorphism into continuous linear maps.
 - `TimeAndSpace.instMulActionSchwartzMap` : The induced `MulAction` instance on Schwartz maps.
 - `TimeAndSpace.smul_schwartzMap_apply` : Pointwise formula for the action.
 
 ## iii. Table of contents
 
-- A. Temperate growth of the coordinate action
-- B. The pullback action on Schwartz maps
+- A. The pullback action on Schwartz maps
 
 ## iv. References
 
@@ -43,65 +42,19 @@ variable {d : ℕ}
 
 /-!
 
-## A. Temperate growth of the coordinate action
-
--/
-
-/-- The linear part of the Euclidean-group action on `TimeAndSpace d`. -/
-private noncomputable def actionLinearMap (g : EuclideanGroup d) :
-    TimeAndSpace d →L[ℝ] TimeAndSpace d :=
-  ContinuousLinearMap.prod (ContinuousLinearMap.fst ℝ Time (Space d))
-    (Space.basis.repr.symm.toContinuousLinearMap.comp
-      ((EuclideanGroup.orthogonalToLinearIsometryEquiv g.linear).toContinuousLinearMap.comp
-        (Space.basis.repr.toContinuousLinearMap.comp
-          (ContinuousLinearMap.snd ℝ Time (Space d)))))
-
-/-- The translation part of the Euclidean-group action on `TimeAndSpace d`. -/
-private noncomputable def actionTranslation (g : EuclideanGroup d) : TimeAndSpace d :=
-  (0, Space.basis.repr.symm g.translation)
-
-private lemma smul_eq_actionLinearMap_add (g : EuclideanGroup d) (tx : TimeAndSpace d) :
-    g • tx = actionLinearMap g tx + actionTranslation g := by
-  refine Prod.ext ?_ ?_
-  · simp [actionLinearMap, actionTranslation]
-  · ext i
-    have hx : tx.2 -ᵥ (0 : Space d) = Space.basis.repr tx.2 := by
-      ext j
-      simp [Space.vsub_apply, Space.zero_apply, Space.basis_repr_apply]
-    rw [TimeAndSpace.snd_smul, EuclideanGroup.smul_apply]
-    simp [actionLinearMap, actionTranslation, hx, Space.add_apply, Space.basis_repr_symm_apply]
-
-/-- The Euclidean-group action on `TimeAndSpace d` has temperate growth. -/
-lemma smul_hasTemperateGrowth (g : EuclideanGroup d) :
-    Function.HasTemperateGrowth (fun tx : TimeAndSpace d => g • tx) := by
-  have hfun : (fun tx : TimeAndSpace d => g • tx) =
-      fun tx => actionLinearMap g tx + actionTranslation g := by
-    funext tx
-    exact smul_eq_actionLinearMap_add g tx
-  rw [hfun]
-  exact Function.HasTemperateGrowth.add (actionLinearMap g).hasTemperateGrowth
-    (Function.HasTemperateGrowth.const (actionTranslation g))
-
-/-- The Euclidean-group action on `TimeAndSpace d` is an isometry. -/
-lemma isometry_smul (g : EuclideanGroup d) :
-    Isometry (fun tx : TimeAndSpace d => g • tx) :=
-  Isometry.of_dist_eq (TimeAndSpace.dist_smul g)
-
-/-- The Euclidean-group action on `TimeAndSpace d` is antilipschitz. -/
-lemma antilipschitz_smul (g : EuclideanGroup d) :
-    AntilipschitzWith 1 (fun tx : TimeAndSpace d => g • tx) :=
-  (isometry_smul g).antilipschitz
-
-/-!
-
-## B. The pullback action on Schwartz maps
+## A. The pullback action on Schwartz maps
 
 -/
 
 variable {F : Type} [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The Euclidean-group pullback action on Schwartz maps over `TimeAndSpace d`. -/
-noncomputable def schwartzAction {d : ℕ} :
+/-- The Euclidean-group pullback action on Schwartz maps over `TimeAndSpace d`.
+
+This is a monoid homomorphism into the *continuous*-linear maps `→L[ℝ]` rather than a mathlib
+`Representation` (`G →* V →ₗ[ℝ] V`): the builder `SchwartzMap.compCLMOfAntilipschitz`
+already yields a continuous-linear map for free, and keeping the `→L` codomain lets the
+action compose under `∘L`, matching the sibling Lorentz action. -/
+noncomputable def schwartzEuclideanAction {d : ℕ} :
     EuclideanGroup d →* 𝓢(TimeAndSpace d, F) →L[ℝ] 𝓢(TimeAndSpace d, F) where
   toFun g := SchwartzMap.compCLMOfAntilipschitz (𝕜 := ℝ)
     (g := fun tx : TimeAndSpace d => g⁻¹ • tx)
@@ -119,23 +72,24 @@ noncomputable def schwartzAction {d : ℕ} :
 
 /-- Pointwise formula for the monoid-homomorphism form of the Schwartz-map pullback action. -/
 @[simp]
-lemma schwartzAction_apply {d : ℕ} (g : EuclideanGroup d) (η : 𝓢(TimeAndSpace d, F))
+lemma schwartzEuclideanAction_apply {d : ℕ} (g : EuclideanGroup d) (η : 𝓢(TimeAndSpace d, F))
     (tx : TimeAndSpace d) :
-    (schwartzAction g η) tx = η (g⁻¹ • tx) := rfl
+    (schwartzEuclideanAction g η) tx = η (g⁻¹ • tx) := rfl
 
 /-- The Euclidean group acts on Schwartz maps over `TimeAndSpace d` by pullback. -/
 noncomputable instance instMulActionSchwartzMap {d : ℕ} :
     MulAction (EuclideanGroup d) 𝓢(TimeAndSpace d, F) where
-  smul g η := schwartzAction g η
+  smul g η := schwartzEuclideanAction g η
   one_smul η := by
     ext tx
-    change (schwartzAction (1 : EuclideanGroup d) η) tx = η tx
-    rw [schwartzAction_apply]
+    change (schwartzEuclideanAction (1 : EuclideanGroup d) η) tx = η tx
+    rw [schwartzEuclideanAction_apply]
     simp
   mul_smul g h η := by
     ext tx
-    change (schwartzAction (g * h) η) tx = (schwartzAction g (schwartzAction h η)) tx
-    simp only [schwartzAction_apply, _root_.mul_inv_rev]
+    change (schwartzEuclideanAction (g * h) η) tx =
+      (schwartzEuclideanAction g (schwartzEuclideanAction h η)) tx
+    simp only [schwartzEuclideanAction_apply, _root_.mul_inv_rev]
     rw [mul_smul]
 
 /-- Pointwise formula for the `MulAction` instance on Schwartz maps. -/
@@ -145,26 +99,27 @@ lemma smul_schwartzMap_apply {d : ℕ} (g : EuclideanGroup d) (η : 𝓢(TimeAnd
     (g • η) tx = η (g⁻¹ • tx) := rfl
 
 /-- Applying `g` and then `h` to a Schwartz map is the pullback action of `h * g`. -/
-lemma schwartzAction_mul_apply {d : ℕ} (g h : EuclideanGroup d)
+lemma schwartzEuclideanAction_mul_apply {d : ℕ} (g h : EuclideanGroup d)
     (η : 𝓢(TimeAndSpace d, F)) :
-    schwartzAction h (schwartzAction g η) = schwartzAction (h * g) η := by
+    schwartzEuclideanAction h (schwartzEuclideanAction g η) =
+      schwartzEuclideanAction (h * g) η := by
   ext tx
-  simp only [schwartzAction_apply, _root_.mul_inv_rev]
+  simp only [schwartzEuclideanAction_apply, _root_.mul_inv_rev]
   rw [mul_smul]
 
 /-- Each Euclidean-group pullback action on Schwartz maps is injective. -/
-lemma schwartzAction_injective {d : ℕ} (g : EuclideanGroup d) :
-    Function.Injective (schwartzAction (F := F) g) := by
+lemma schwartzEuclideanAction_injective {d : ℕ} (g : EuclideanGroup d) :
+    Function.Injective (schwartzEuclideanAction (F := F) g) := by
   intro η1 η2 hη
   ext tx
   have htx := congrArg (fun η : 𝓢(TimeAndSpace d, F) => η (g • tx)) hη
   simpa using htx
 
 /-- Each Euclidean-group pullback action on Schwartz maps is surjective. -/
-lemma schwartzAction_surjective {d : ℕ} (g : EuclideanGroup d) :
-    Function.Surjective (schwartzAction (F := F) g) := by
+lemma schwartzEuclideanAction_surjective {d : ℕ} (g : EuclideanGroup d) :
+    Function.Surjective (schwartzEuclideanAction (F := F) g) := by
   intro η
-  use schwartzAction g⁻¹ η
+  use schwartzEuclideanAction g⁻¹ η
   ext tx
   simp
 
