@@ -47,6 +47,59 @@ abbrev dualLeftMetric : ℂT[.downL, .downL] := complexLorentzTensor.metricTenso
 /-- The metric `ε_{dot a}_{dot a}` as a complex Lorentz tensor. -/
 abbrev dualRightMetric : ℂT[.downR, .downR] := complexLorentzTensor.metricTensor Color.downR
 
+/-- The Levi-Civita tensor `εⁱʲᵏˡ` as a complex Lorentz tensor, with `ε⁰¹²³ = 1`. -/
+noncomputable def leviCivita : ℂT[.up, .up, .up, .up] :=
+  ofRat (c := ![Color.up, Color.up, Color.up, Color.up]) fun f =>
+    if f 0 = (0 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨1, 0⟩ else
+    ⟨0, 0⟩
+
 /-!
 
 ## Notation
@@ -70,6 +123,9 @@ scoped[complexLorentzTensor] notation "εL'" => dualLeftMetric
 
 /-- The metric `ε_{dot a}_{dot a}` as a complex Lorentz tensors. -/
 scoped[complexLorentzTensor] notation "εR'" => dualRightMetric
+
+/-- The Levi-Civita tensor `εⁱʲᵏˡ` as a complex Lorentz tensor. -/
+scoped[complexLorentzTensor] notation "ε4" => leviCivita
 
 /-!
 
@@ -394,6 +450,59 @@ lemma dualRightMetric_eq_ofRat : εR' = ofRat fun f =>
   rw [← map_sub]
   congr
   with_unfolding_all decide
+
+/-- The `ofRat` form of the Levi-Civita tensor. -/
+lemma leviCivita_eq_ofRat : ε4 =
+    ofRat (c := ![Color.up, Color.up, Color.up, Color.up]) fun f =>
+    if f 0 = (0 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (0 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (1 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (3 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (3 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (2 : Fin 4) ∧ f 1 = (3 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (0 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (2 : Fin 4) then ⟨1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (1 : Fin 4) ∧
+        f 2 = (2 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (0 : Fin 4) ∧ f 3 = (1 : Fin 4) then ⟨-1, 0⟩ else
+    if f 0 = (3 : Fin 4) ∧ f 1 = (2 : Fin 4) ∧
+        f 2 = (1 : Fin 4) ∧ f 3 = (0 : Fin 4) then ⟨1, 0⟩ else
+    ⟨0, 0⟩ := rfl
 
 /-!
 
