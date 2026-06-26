@@ -5,8 +5,7 @@ Authors: Joseph Tooby-Smith
 -/
 module
 
-public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Basic
-public import Physlib.Relativity.Tensors.ComplexTensor.Units.Basic
+public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.LeviCivita
 /-!
 
 ## Basic lemmas regarding metrics
@@ -92,19 +91,6 @@ lemma dualRightMetric_antisymm : {εR' | α α' = - (εR' | α' α)}ᵀ := by
   simp only [Tensorial.self_toTensor_apply]
   rw [permT_basis_repr_symm_apply]
   rw [dualRightMetric_eq_ofRat, ofRat_basis_repr_apply, ← map_neg, ofRat_basis_repr_apply]
-  congr 1
-  revert b
-  decide
-
-set_option maxRecDepth 100000 in
-/-- The Levi-Civita tensor is antisymmetric in its first two indices
-`{ε4 | μ ν ρ σ = - ε4 | ν μ ρ σ}ᵀ`. -/
-lemma leviCivita_antisymm : {ε4 | μ ν ρ σ = - (ε4 | ν μ ρ σ)}ᵀ := by
-  apply (Tensor.basis _).repr.injective
-  ext b
-  simp only [Tensorial.self_toTensor_apply]
-  rw [permT_basis_repr_symm_apply]
-  rw [leviCivita_eq_ofRat, ofRat_basis_repr_apply, ← map_neg, ofRat_basis_repr_apply]
   congr 1
   revert b
   decide

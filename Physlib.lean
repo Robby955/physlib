@@ -338,6 +338,7 @@ public import Physlib.Relativity.Tensors.ComplexTensor.Lemmas
 public import Physlib.Relativity.Tensors.ComplexTensor.Matrix.Pre
 public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Basic
 public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Lemmas
+public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.LeviCivita
 public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Pre
 public import Physlib.Relativity.Tensors.ComplexTensor.OfRat
 public import Physlib.Relativity.Tensors.ComplexTensor.Units.Basic
