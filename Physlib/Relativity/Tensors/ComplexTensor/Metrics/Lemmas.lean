@@ -5,7 +5,8 @@ Authors: Joseph Tooby-Smith
 -/
 module
 
-public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.LeviCivita
+public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Basic
+public import Physlib.Relativity.Tensors.ComplexTensor.Units.Basic
 /-!
 
 ## Basic lemmas regarding metrics

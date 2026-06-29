@@ -338,7 +338,6 @@ public import Physlib.Relativity.Tensors.ComplexTensor.Lemmas
 public import Physlib.Relativity.Tensors.ComplexTensor.Matrix.Pre
 public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Basic
 public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Lemmas
-public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.LeviCivita
 public import Physlib.Relativity.Tensors.ComplexTensor.Metrics.Pre
 public import Physlib.Relativity.Tensors.ComplexTensor.OfRat
 public import Physlib.Relativity.Tensors.ComplexTensor.Units.Basic
@@ -366,6 +365,7 @@ public import Physlib.Relativity.Tensors.Contraction.SuccSuccAbove
 public import Physlib.Relativity.Tensors.Dual
 public import Physlib.Relativity.Tensors.Elab
 public import Physlib.Relativity.Tensors.Evaluation
+public import Physlib.Relativity.Tensors.LeviCivita.Basic
 public import Physlib.Relativity.Tensors.MetricTensor
 public import Physlib.Relativity.Tensors.OfInt
 public import Physlib.Relativity.Tensors.Product
