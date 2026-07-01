@@ -97,7 +97,8 @@ def contrCoContract : ((ContrMod.rep).tprod (CoMod.rep)).IntertwiningMap
 /-- Notation for `contrCoContract` acting on a tmul. -/
 local notation "⟪" ψ "," φ "⟫ₘ" => contrCoContract (ψ ⊗ₜ φ)
 
-lemma contrCoContract_hom_tmul (ψ : ContrMod d) (φ : CoMod d) : ⟪ψ, φ⟫ₘ = ψ.toFin1dℝ ⬝ᵥ φ.toFin1dℝ := by
+lemma contrCoContract_hom_tmul (ψ : ContrMod d) (φ : CoMod d) :
+    ⟪ψ, φ⟫ₘ = ψ.toFin1dℝ ⬝ᵥ φ.toFin1dℝ := by
   rfl
 
 /-- The linear map from CoMod d ⊗ ContrMod d to ℝ given by
@@ -119,7 +120,8 @@ def coContrContract : ((CoMod.rep (d := d)).tprod (ContrMod.rep (d := d))).Inter
 /-- Notation for `coContrContract` acting on a tmul. -/
 local notation "⟪" φ "," ψ "⟫ₘ" => coContrContract (φ ⊗ₜ ψ)
 
-lemma coContrContract_hom_tmul (φ : CoMod d) (ψ : ContrMod d) : ⟪φ, ψ⟫ₘ = φ.toFin1dℝ ⬝ᵥ ψ.toFin1dℝ := by
+lemma coContrContract_hom_tmul (φ : CoMod d) (ψ : ContrMod d) :
+    ⟪φ, ψ⟫ₘ = φ.toFin1dℝ ⬝ᵥ ψ.toFin1dℝ := by
   rfl
 
 /-!
