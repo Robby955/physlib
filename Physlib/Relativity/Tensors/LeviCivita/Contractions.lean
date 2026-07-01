@@ -6,353 +6,83 @@ Authors: Robert Sneiderman
 module
 
 public import Physlib.Relativity.Tensors.LeviCivita.Basic
-public import Mathlib.LinearAlgebra.Matrix.SchurComplement
+public import Physlib.Mathematics.KroneckerDeltaContraction
 /-!
 
 # Contraction identities for the Levi-Civita tensor
 
 This file proves the "epsilon-epsilon" contraction identities for the rank-four Levi-Civita
-symbol in `d = 3` (four spacetime indices).  Everything rests on one reusable combinatorial
-fact about the generalized Kronecker delta: summing a `generalizedKroneckerDelta` over one
-shared index lowers its rank by one and multiplies it by `card α - n`
-(`KroneckerDelta.generalizedKroneckerDelta_sum_snoc`).
+tensor `leviCivita` (notation `ε4`) in `d = 3`, stated in terms of the standard-basis
+components of `ε4` itself (`realLorentzTensor.leviCivita_basis_repr_apply`).
 
-Iterating that fact, together with the product identity
-`generalizedKroneckerDelta μ ν = generalizedKroneckerDelta μ id * generalizedKroneckerDelta ν id`
-(`KroneckerDelta.generalizedKroneckerDelta_mul`), gives the three Levi-Civita symbol
-contractions, stated in terms of the components of `leviCivita` (see
-`realLorentzTensor.leviCivita_basis_repr_apply`):
+The purely combinatorial backbone — facts about the `generalizedKroneckerDelta` alone, with no
+tensor content — lives in `Physlib.Mathematics.KroneckerDeltaContraction`, next to the
+definition of `generalizedKroneckerDelta`.  Here we specialise those facts to the components of
+`ε4`:
 
-* `leviCivita_symbol_contract_zero` : `∑ f, ε f * ε f = 24` (full contraction);
-* `leviCivita_symbol_contract_one`  : `∑ h, ε (σ ::ᵥ h) * ε (τ ::ᵥ h) = 6 * δ[σ,τ]`;
+* `leviCivita_symbol_contract_zero` : `∑_b (ε4)_b · (ε4)_b = 24` (full contraction);
+* `leviCivita_symbol_contract_one`  : `∑_h (ε4)_{a,h} · (ε4)_{b,h} = 6 · δ[a,b]`;
 * `leviCivita_symbol_contract_two`  :
-  `∑ h, ε (ρ ::ᵥ σ ::ᵥ h) * ε (τ ::ᵥ ω ::ᵥ h) = 2 * (δ[ρ,τ]*δ[σ,ω] - δ[ρ,ω]*δ[σ,τ])`.
+  `∑_h (ε4)_{r,s,h} · (ε4)_{t,w,h} = 2 · (δ[r,t]·δ[s,w] - δ[r,w]·δ[s,t])`.
 
-Here `ε f = generalizedKroneckerDelta f id` is the integer Levi-Civita symbol, which is exactly
-the standard-basis component of `leviCivita` carried over to `Fin 4` by `finSumFinEquiv`.
+Here `(ε4)_b = (Tensor.basis _).repr ε4 b` is the standard-basis component of `ε4`, an integer
+Levi-Civita symbol carried to the reals, and the sums run over the remaining (uncontracted)
+component slots.
 
-These are the all-upper-index ("symbol level") forms.  Lowering one factor with the Lorentz
-metric `η` (whose determinant is `-1`) flips every sign, turning `24`, `6`, `2` into the
-familiar `-24`, `-6`, `-2` of `ε^{μνρσ} ε_{μνρσ}` etc.
+These are the all-upper-index ("symbol level") forms: each factor carries upper indices, and the
+contracted slots are paired by the naive Kronecker pairing of a basis index against itself, so the
+constants are the *positive* `24, 6, 2`.  The metric-covariant contraction `ε^{μνρσ} ε_{μνρσ}`
+lowers one factor with the Lorentz metric `η` (whose determinant is `-1` in four dimensions),
+which multiplies each identity by `det η = -1` and recovers the textbook `ε^{μνρσ} ε_{μνρσ} = -24`,
+`ε^{μνρσ} ε_{μνρτ} = -6 δ^σ_τ` and `ε^{μνρσ} ε_{μντω} = -2 (δ^ρ_τ δ^σ_ω - δ^ρ_ω δ^σ_τ)`.  Writing
+that covariant form in the `{ε4 | μ ν ρ σ ⊗ … }ᵀ` index notation of `LeviCivita.Basic` requires the
+fully index-lowered Levi-Civita tensor `ε_{μνρσ}`, which is not developed here; these component
+identities are the reusable ingredient from which such a covariant statement would be assembled.
 
 -/
 
 @[expose] public section
 
-open Matrix
-
-namespace Matrix
-
-/-- Expanding the determinant of a rank-one row update over a finite set of rows.
-For `i ∈ s` the row `A i` is replaced by `A i + w i • b`; the other rows are untouched. -/
-private theorem det_add_rankOne_aux {ι : Type*} [DecidableEq ι] [Fintype ι] {R : Type*}
-    [CommRing R] (A : Matrix ι ι R) (w b : ι → R) (s : Finset ι) :
-    (A + Matrix.of fun i j => (if i ∈ s then w i else 0) * b j).det
-      = A.det + ∑ i ∈ s, w i * (A.updateRow i b).det := by
-  classical
-  induction s using Finset.induction with
-  | empty =>
-    have h0 : (Matrix.of fun (i : ι) (j : ι) =>
-        (if i ∈ (∅ : Finset ι) then w i else 0) * b j) = 0 := by
-      ext i j; simp
-    rw [h0, add_zero, Finset.sum_empty, add_zero]
-  | @insert i₀ s hi₀ ih =>
-    -- The new matrix differs from the `s`-matrix only in row `i₀`, by `+ w i₀ • b`.
-    set Ms : Matrix ι ι R := A + Matrix.of fun i j => (if i ∈ s then w i else 0) * b j with hMs
-    have hrow : Ms i₀ = A i₀ := by
-      funext j; simp [hMs, hi₀]
-    have key : (A + Matrix.of fun i j => (if i ∈ insert i₀ s then w i else 0) * b j)
-        = Ms.updateRow i₀ (A i₀ + w i₀ • b) := by
-      ext i j
-      by_cases hi : i = i₀
-      · subst hi
-        simp [Matrix.updateRow_self, hi₀, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
-      · rw [Matrix.updateRow_ne hi]
-        simp [hMs, Finset.mem_insert, hi]
-    rw [key, Matrix.det_updateRow_add, Matrix.det_updateRow_smul]
-    -- The `A i₀` part rebuilds `Ms`; the `b` part is `det (updateRow A i₀ b)` after column ops.
-    have h1 : (Ms.updateRow i₀ (A i₀)).det = Ms.det := by
-      rw [← hrow, Matrix.updateRow_eq_self]
-    have h2 : (Ms.updateRow i₀ b).det = (A.updateRow i₀ b).det := by
-      refine Matrix.det_eq_of_forall_row_eq_smul_add_const
-        (fun i => if i ∈ s then w i else 0) i₀ (by simp [hi₀]) ?_
-      intro i j
-      by_cases hi : i = i₀
-      · subst hi
-        simp [Matrix.updateRow_self, hi₀]
-      · rw [Matrix.updateRow_ne hi, Matrix.updateRow_ne hi, Matrix.updateRow_self, hMs]
-        simp [Matrix.add_apply]
-    rw [h1, h2, ih, Finset.sum_insert hi₀]
-    ring
-
-/-- **Rank-one determinant update** (the ring-general matrix determinant lemma for an outer
-product, valid even when `A` is singular).  Adding the rank-one matrix `w ⊗ b` to `A` changes the
-determinant by `∑ i, w i * det (A.updateRow i b)`.
-
-Mathlib only provides this when `det A` is a unit (`Matrix.det_add_replicateCol_mul_replicateRow`);
-the singular case is needed here because Kronecker-delta matrices are typically singular. -/
-private theorem det_add_rankOne {ι : Type*} [DecidableEq ι] [Fintype ι] {R : Type*}
-    [CommRing R] (A : Matrix ι ι R) (w b : ι → R) :
-    (A + Matrix.of fun i j => w i * b j).det = A.det + ∑ i, w i * (A.updateRow i b).det := by
-  have h := det_add_rankOne_aux A w b Finset.univ
-  simpa using h
-
-end Matrix
-
-namespace KroneckerDelta
-
-open Matrix
-
-section Generalized
-
-variable {α : Type} [DecidableEq α] [Fintype α]
-
-/-- The product of two Levi-Civita-type symbols is a generalized Kronecker delta:
-`δ^{μ}_{·} · δ^{ν}_{·} = δ^{μ}_{ν}`, where each single factor is a Kronecker matrix against the
-identity.  This is the Lean form of `ε^{μ₁…μₙ} ε_{ν₁…νₙ} = δ^{μ₁…μₙ}_{ν₁…νₙ}`. -/
-theorem generalizedKroneckerDelta_mul (μ ν : α → α) :
-    generalizedKroneckerDelta μ id * generalizedKroneckerDelta ν id
-      = generalizedKroneckerDelta μ ν := by
-  rw [show generalizedKroneckerDelta ν id
-        = (Matrix.of fun i j => ((kroneckerDelta (ν i) (id j) : ℕ) : ℤ)).det from rfl,
-    ← Matrix.det_transpose,
-    show generalizedKroneckerDelta μ id
-        = (Matrix.of fun i j => ((kroneckerDelta (μ i) (id j) : ℕ) : ℤ)).det from rfl,
-    ← Matrix.det_mul,
-    show generalizedKroneckerDelta μ ν
-        = (Matrix.of fun i j => ((kroneckerDelta (μ i) (ν j) : ℕ) : ℤ)).det from rfl]
-  congr 1
-  ext i j
-  rw [Matrix.mul_apply]
-  simp only [Matrix.of_apply, Matrix.transpose_apply, id_eq, ← Nat.cast_mul]
-  rw [← Nat.cast_sum]
-  congr 1
-  rw [Finset.sum_congr rfl fun k _ => by rw [KroneckerDelta.symm (ν j) k]]
-  exact KroneckerDelta.sum_mul (μ i) (ν j)
-
-/-- **Generalized Kronecker delta contraction.**  Summing a `generalizedKroneckerDelta` over one
-shared index appended at the end lowers the rank by one and pulls out a factor of `card α - n`.
-This is the reusable combinatorial fact behind all epsilon-epsilon identities. -/
-theorem generalizedKroneckerDelta_sum_snoc {n : ℕ} (μ ν : Fin n → α) :
-    ∑ a : α, generalizedKroneckerDelta (Fin.snoc μ a) (Fin.snoc ν a)
-      = ((Fintype.card α : ℤ) - n) * generalizedKroneckerDelta μ ν := by
-  classical
-  set A : Matrix (Fin n) (Fin n) ℤ :=
-    Matrix.of fun i j => ((kroneckerDelta (μ i) (ν j) : ℕ) : ℤ) with hA
-  -- The `n × n` δ-matrix is exactly `generalizedKroneckerDelta μ ν`.
-  have hAdet : A.det = generalizedKroneckerDelta μ ν := rfl
-  -- Step 1: Schur complement.  Border the matrix with the appended index and reduce dimension.
-  have step1 : ∀ a : α, generalizedKroneckerDelta (Fin.snoc μ a) (Fin.snoc ν a)
-      = (A - Matrix.of fun i j =>
-          ((kroneckerDelta (μ i) a : ℕ) : ℤ) * ((kroneckerDelta a (ν j) : ℕ) : ℤ)).det := by
-    intro a
-    have hblk : (Matrix.of fun (i j : Fin (n + 1)) =>
-          ((kroneckerDelta ((Fin.snoc μ a : Fin (n + 1) → α) i)
-            ((Fin.snoc ν a : Fin (n + 1) → α) j) : ℕ) : ℤ)).submatrix
-            finSumFinEquiv finSumFinEquiv
-        = Matrix.fromBlocks A
-            (Matrix.of fun i (_ : Fin 1) => ((kroneckerDelta (μ i) a : ℕ) : ℤ))
-            (Matrix.of fun (_ : Fin 1) j => ((kroneckerDelta a (ν j) : ℕ) : ℤ))
-            (1 : Matrix (Fin 1) (Fin 1) ℤ) := by
-      have hcast : ∀ i : Fin n, (Fin.castAdd 1 i : Fin (n + 1)) = Fin.castSucc i := fun _ => rfl
-      have hlast : Fin.natAdd n (0 : Fin 1) = Fin.last n := by
-        apply Fin.ext; simp
-      ext x y
-      cases x with
-      | inl i =>
-        cases y with
-        | inl j =>
-          simp only [Matrix.submatrix_apply, finSumFinEquiv_apply_left, Matrix.of_apply,
-            Matrix.fromBlocks_apply₁₁, hA]
-          rw [hcast i, hcast j, Fin.snoc_castSucc, Fin.snoc_castSucc]
-        | inr j =>
-          simp only [Matrix.submatrix_apply, finSumFinEquiv_apply_left, finSumFinEquiv_apply_right,
-            Matrix.of_apply, Matrix.fromBlocks_apply₁₂]
-          rw [hcast i, Fin.snoc_castSucc, Subsingleton.elim j 0, hlast, Fin.snoc_last]
-      | inr i =>
-        cases y with
-        | inl j =>
-          simp only [Matrix.submatrix_apply, finSumFinEquiv_apply_left, finSumFinEquiv_apply_right,
-            Matrix.of_apply, Matrix.fromBlocks_apply₂₁]
-          rw [hcast j, Fin.snoc_castSucc, Subsingleton.elim i 0, hlast, Fin.snoc_last]
-        | inr j =>
-          simp only [Matrix.submatrix_apply, finSumFinEquiv_apply_right, Matrix.of_apply,
-            Matrix.fromBlocks_apply₂₂]
-          rw [Subsingleton.elim i 0, Subsingleton.elim j 0, hlast]
-          simp [Fin.snoc_last]
-    rw [show generalizedKroneckerDelta (Fin.snoc μ a) (Fin.snoc ν a)
-          = (Matrix.of fun (i j : Fin (n + 1)) =>
-              ((kroneckerDelta ((Fin.snoc μ a : Fin (n + 1) → α) i)
-                ((Fin.snoc ν a : Fin (n + 1) → α) j) : ℕ) : ℤ)).det from rfl,
-      ← Matrix.det_submatrix_equiv_self finSumFinEquiv, hblk, Matrix.det_fromBlocks_one₂₂]
-    congr 1
-  -- Step 2: the rank-one determinant lemma applied per `a`.
-  have step2 : ∀ a : α, (A - Matrix.of fun i j =>
-        ((kroneckerDelta (μ i) a : ℕ) : ℤ) * ((kroneckerDelta a (ν j) : ℕ) : ℤ)).det
-      = A.det - ∑ i, ((kroneckerDelta (μ i) a : ℕ) : ℤ)
-          * (A.updateRow i (fun j => ((kroneckerDelta a (ν j) : ℕ) : ℤ))).det := by
-    intro a
-    have h := Matrix.det_add_rankOne A (fun i => -((kroneckerDelta (μ i) a : ℕ) : ℤ))
-      (fun j => ((kroneckerDelta a (ν j) : ℕ) : ℤ))
-    have hmat : (A - Matrix.of fun i j =>
-          ((kroneckerDelta (μ i) a : ℕ) : ℤ) * ((kroneckerDelta a (ν j) : ℕ) : ℤ))
-        = (A + Matrix.of fun i j => (-((kroneckerDelta (μ i) a : ℕ) : ℤ))
-            * ((kroneckerDelta a (ν j) : ℕ) : ℤ)) := by
-      ext i j; simp [Matrix.sub_apply, Matrix.add_apply, neg_mul, sub_eq_add_neg]
-    rw [hmat, h]
-    simp only [neg_mul, Finset.sum_neg_distrib, sub_eq_add_neg]
-  -- Step 3: collect the sums.
-  rw [← hAdet]
-  have hkey : ∀ i : Fin n, ∑ a : α, ((kroneckerDelta (μ i) a : ℕ) : ℤ)
-        * (A.updateRow i (fun j => ((kroneckerDelta a (ν j) : ℕ) : ℤ))).det = A.det := by
-    intro i
-    rw [Finset.sum_eq_single (μ i)]
-    · have : (fun j => ((kroneckerDelta (μ i) (ν j) : ℕ) : ℤ)) = A i := by
-        funext j; simp [hA]
-      rw [KroneckerDelta.eq_one_of_same, Nat.cast_one, one_mul, this, Matrix.updateRow_eq_self]
-    · intro a _ hane
-      rw [KroneckerDelta.eq_zero_of_ne (Ne.symm hane), Nat.cast_zero, zero_mul]
-    · intro h; exact absurd (Finset.mem_univ (μ i)) h
-  calc ∑ a : α, generalizedKroneckerDelta (Fin.snoc μ a) (Fin.snoc ν a)
-      = ∑ a : α, (A.det - ∑ i, ((kroneckerDelta (μ i) a : ℕ) : ℤ)
-          * (A.updateRow i (fun j => ((kroneckerDelta a (ν j) : ℕ) : ℤ))).det) := by
-        exact Finset.sum_congr rfl fun a _ => by rw [step1 a, step2 a]
-    _ = (Fintype.card α : ℤ) * A.det
-          - ∑ i, ∑ a : α, ((kroneckerDelta (μ i) a : ℕ) : ℤ)
-            * (A.updateRow i (fun j => ((kroneckerDelta a (ν j) : ℕ) : ℤ))).det := by
-        rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
-          Finset.sum_comm]
-    _ = (Fintype.card α : ℤ) * A.det - ∑ _i : Fin n, A.det := by
-        rw [Finset.sum_congr rfl fun i _ => hkey i]
-    _ = ((Fintype.card α : ℤ) - n) * A.det := by
-        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-        ring
-
-/-- Split a sum over `(k+1)`-tuples into the last entry and the initial `k`-tuple. -/
-private lemma sum_over_snoc {X : Type*} [Fintype X] {M : Type*} [AddCommMonoid M] {k : ℕ}
-    (F : (Fin (k + 1) → X) → M) :
-    ∑ h : Fin (k + 1) → X, F h = ∑ h' : Fin k → X, ∑ c : X, F (Fin.snoc h' c) := by
-  rw [← Equiv.sum_comp (Fin.snocEquiv (fun _ => X)) F, Fintype.sum_prod_type, Finset.sum_comm]
-  rfl
-
-/-- **Full contraction.**  Iterating the snoc contraction over all four indices:
-`∑_f δ^{f}_{f} = 4!`.  Here `f` ranges over all maps `Fin 4 → Fin 4`. -/
-theorem sum_generalizedKroneckerDelta_self (k : ℕ) :
-    ∑ h : Fin k → Fin 4, generalizedKroneckerDelta h h
-      = ∏ j ∈ Finset.range k, ((4 : ℤ) - j) := by
-  induction k with
-  | zero =>
-    rw [Finset.prod_range_zero, Fintype.sum_unique]
-    exact Matrix.det_fin_zero
-  | succ k ih =>
-    rw [sum_over_snoc]
-    have hstep : ∀ h' : Fin k → Fin 4, ∑ c : Fin 4,
-        generalizedKroneckerDelta (Fin.snoc h' c) (Fin.snoc h' c)
-          = ((4 : ℤ) - k) * generalizedKroneckerDelta h' h' := by
-      intro h'
-      rw [generalizedKroneckerDelta_sum_snoc h' h', Fintype.card_fin]
-      push_cast
-      ring
-    rw [Finset.sum_congr rfl fun h' _ => hstep h', ← Finset.mul_sum, ih,
-      Finset.prod_range_succ]
-    ring
-
-/-- **Single contraction.**  Contracting the last `k` of `k+1` index pairs leaves one free pair
-`σ, τ`, with the factorial factor `(4-1)(4-2)…`. -/
-theorem sum_generalizedKroneckerDelta_cons (σ τ : Fin 4) (k : ℕ) :
-    ∑ h : Fin k → Fin 4,
-        generalizedKroneckerDelta (Fin.cons σ h) (Fin.cons τ h)
-      = (∏ j ∈ Finset.range k, ((3 : ℤ) - j)) * ((kroneckerDelta σ τ : ℕ) : ℤ) := by
-  induction k with
-  | zero =>
-    rw [Finset.prod_range_zero, one_mul, Fintype.sum_unique]
-    exact Matrix.det_fin_one _
-  | succ k ih =>
-    rw [sum_over_snoc]
-    have hstep : ∀ h' : Fin k → Fin 4, ∑ c : Fin 4,
-        generalizedKroneckerDelta (Fin.cons σ (Fin.snoc h' c)) (Fin.cons τ (Fin.snoc h' c))
-          = ((3 : ℤ) - k) * generalizedKroneckerDelta (Fin.cons σ h') (Fin.cons τ h') := by
-      intro h'
-      rw [Finset.sum_congr rfl fun c _ => by
-        rw [Fin.cons_snoc_eq_snoc_cons, Fin.cons_snoc_eq_snoc_cons],
-        generalizedKroneckerDelta_sum_snoc (Fin.cons σ h') (Fin.cons τ h'), Fintype.card_fin]
-      push_cast
-      ring
-    rw [Finset.sum_congr rfl fun h' _ => hstep h', ← Finset.mul_sum, ih,
-      Finset.prod_range_succ]
-    ring
-
-/-- **Double contraction.**  Contracting the last `k` of `k+2` index pairs leaves two free pairs,
-with value a `2×2` generalized Kronecker delta times the factorial factor. -/
-theorem sum_generalizedKroneckerDelta_cons₂ (ρ σ τ ω : Fin 4) (k : ℕ) :
-    ∑ h : Fin k → Fin 4,
-        generalizedKroneckerDelta (Fin.cons ρ (Fin.cons σ h)) (Fin.cons τ (Fin.cons ω h))
-      = (∏ j ∈ Finset.range k, ((2 : ℤ) - j))
-        * generalizedKroneckerDelta ![ρ, σ] ![τ, ω] := by
-  induction k with
-  | zero =>
-    rw [Finset.prod_range_zero, one_mul, Fintype.sum_unique]
-    have e1 : ∀ d : Fin 0 → Fin 4, (Fin.cons ρ (Fin.cons σ d) : Fin 2 → Fin 4) = ![ρ, σ] := by
-      intro d; funext i; fin_cases i <;> rfl
-    have e2 : ∀ d : Fin 0 → Fin 4, (Fin.cons τ (Fin.cons ω d) : Fin 2 → Fin 4) = ![τ, ω] := by
-      intro d; funext i; fin_cases i <;> rfl
-    rw [e1, e2]
-  | succ k ih =>
-    rw [sum_over_snoc]
-    have hstep : ∀ h' : Fin k → Fin 4, ∑ c : Fin 4,
-        generalizedKroneckerDelta (Fin.cons ρ (Fin.cons σ (Fin.snoc h' c)))
-          (Fin.cons τ (Fin.cons ω (Fin.snoc h' c)))
-          = ((2 : ℤ) - k) * generalizedKroneckerDelta (Fin.cons ρ (Fin.cons σ h'))
-              (Fin.cons τ (Fin.cons ω h')) := by
-      intro h'
-      rw [Finset.sum_congr rfl fun c _ => by
-        rw [Fin.cons_snoc_eq_snoc_cons, Fin.cons_snoc_eq_snoc_cons,
-          Fin.cons_snoc_eq_snoc_cons, Fin.cons_snoc_eq_snoc_cons],
-        generalizedKroneckerDelta_sum_snoc (Fin.cons ρ (Fin.cons σ h'))
-          (Fin.cons τ (Fin.cons ω h')), Fintype.card_fin]
-      push_cast
-      ring
-    rw [Finset.sum_congr rfl fun h' _ => hstep h', ← Finset.mul_sum, ih,
-      Finset.prod_range_succ]
-    ring
-
-end Generalized
-
-end KroneckerDelta
+open Matrix TensorSpecies Tensor KroneckerDelta
 
 namespace realLorentzTensor
 
-open KroneckerDelta
-
 /-!
 
-## Epsilon-epsilon contraction identities
+## Combinatorial bridge lemmas
 
-The integer Levi-Civita symbol is `ε f = generalizedKroneckerDelta f id` for `f : Fin 4 → Fin 4`.
-By `realLorentzTensor.leviCivita_basis_repr_apply`, the real number `((ε (finSumFinEquiv ∘ b)) : ℝ)`
-is exactly the standard-basis component `(Tensor.basis _).repr leviCivita b`, so the sums below are
-the all-upper-index contractions `ε^{…} ε^{…}` summed over the contracted index slots.
-
-The constants are the *positive* `24, 6, 2`.  These are the contractions of two symbols carrying
-upper indices on both factors.  Lowering one factor with the Lorentz metric `η` (whose determinant
-is `-1` in four dimensions) multiplies each identity by `det η = -1`, recovering the textbook
-`ε^{μνρσ} ε_{μνρσ} = -24`, `ε^{μνρσ} ε_{μνρτ} = -6 δ^σ_τ` and
-`ε^{μνρσ} ε_{μντω} = -2 (δ^ρ_τ δ^σ_ω - δ^ρ_ω δ^σ_τ)`.
+The integer Levi-Civita symbol is `generalizedKroneckerDelta f id` for `f : Fin 4 → Fin 4`, and
+`realLorentzTensor.leviCivita_basis_repr_apply` identifies it with the standard-basis component of
+`ε4` after transporting the component index along `finSumFinEquiv`.  The following private lemmas
+package the symbol-level value of each contraction (from `KroneckerDeltaContraction`) and the
+bookkeeping needed to switch between component indices `Fin 1 ⊕ Fin 3` and the `Fin 4` labels.
 
 -/
 
-/-- **Full Levi-Civita contraction** `ε^{μνρσ} ε^{μνρσ} = 24` at the symbol level.  Summing the
-square of the Levi-Civita symbol over all four index slots counts the `4! = 24` permutations. -/
-theorem leviCivita_symbol_contract_zero :
-    ∑ f : Fin 4 → Fin 4,
-        generalizedKroneckerDelta f id * generalizedKroneckerDelta f id = 24 := by
-  rw [Finset.sum_congr rfl fun f _ => generalizedKroneckerDelta_mul f f,
+/-- Transporting a `Fin.cons` along `finSumFinEquiv` component-wise. -/
+private lemma cons_finSum {n : ℕ} (a : Fin 1 ⊕ Fin 3) (h : Fin n → (Fin 1 ⊕ Fin 3)) :
+    (fun i => finSumFinEquiv ((Fin.cons a h : Fin (n + 1) → _) i))
+      = Fin.cons (finSumFinEquiv a) (fun j => finSumFinEquiv (h j)) := by
+  funext i
+  refine Fin.cases ?_ ?_ i
+  · rfl
+  · intro j; rfl
+
+/-- The Kronecker delta is invariant under the component-index equivalence `finSumFinEquiv`. -/
+private lemma kron_finSum (a b : Fin 1 ⊕ Fin 3) :
+    kroneckerDelta (finSumFinEquiv a) (finSumFinEquiv b) = kroneckerDelta a b := by
+  simp only [kroneckerDelta, Equiv.apply_eq_iff_eq]
+
+/-- Symbol-level full contraction over `Fin 4 → Fin 4`. -/
+private lemma symbol_zero :
+    ∑ g : Fin 4 → Fin 4,
+      generalizedKroneckerDelta g id * generalizedKroneckerDelta g id = (24 : ℤ) := by
+  rw [Finset.sum_congr rfl fun g _ => generalizedKroneckerDelta_mul g g,
     sum_generalizedKroneckerDelta_self 4]
   norm_num [Finset.prod_range_succ]
 
-/-- **Triple Levi-Civita contraction** `ε^{μνρσ} ε^{μνρτ} = 6 δ^σ_τ` at the symbol level:
-contracting three of the four index slots leaves one free pair and the factor `3! = 6`. -/
-theorem leviCivita_symbol_contract_one (σ τ : Fin 4) :
+/-- Symbol-level triple contraction, one free pair `σ, τ`. -/
+private lemma symbol_one (σ τ : Fin 4) :
     ∑ h : Fin 3 → Fin 4,
         generalizedKroneckerDelta (Fin.cons σ h) id
           * generalizedKroneckerDelta (Fin.cons τ h) id
@@ -362,10 +92,8 @@ theorem leviCivita_symbol_contract_one (σ τ : Fin 4) :
     sum_generalizedKroneckerDelta_cons σ τ 3]
   norm_num [Finset.prod_range_succ]
 
-/-- **Double Levi-Civita contraction** `ε^{μνρσ} ε^{μντω} = 2 (δ^ρ_τ δ^σ_ω - δ^ρ_ω δ^σ_τ)` at the
-symbol level: contracting two of the four index slots leaves a `2×2` generalized Kronecker delta
-and the factor `2! = 2`. -/
-theorem leviCivita_symbol_contract_two (ρ σ τ ω : Fin 4) :
+/-- Symbol-level double contraction, two free pairs. -/
+private lemma symbol_two (ρ σ τ ω : Fin 4) :
     ∑ h : Fin 2 → Fin 4,
         generalizedKroneckerDelta (Fin.cons ρ (Fin.cons σ h)) id
           * generalizedKroneckerDelta (Fin.cons τ (Fin.cons ω h)) id
@@ -383,6 +111,99 @@ theorem leviCivita_symbol_contract_two (ρ σ τ ω : Fin 4) :
     sum_generalizedKroneckerDelta_cons₂ ρ σ τ ω 2, hdet]
   norm_num [Finset.prod_range_succ]
 
+/-!
+
+## Epsilon-epsilon contraction identities
+
+-/
+
+/-- **Full Levi-Civita contraction** `ε^{μνρσ} ε^{μνρσ} = 24` at the symbol level.  Summing the
+square of every standard-basis component of `ε4` over all four index slots counts the `4! = 24`
+permutations. -/
+lemma leviCivita_symbol_contract_zero :
+    ∑ b : ComponentIdx (S := realLorentzTensor 3)
+        ![Color.up, Color.up, Color.up, Color.up],
+      (Tensor.basis _).repr ε4 b * (Tensor.basis _).repr ε4 b = 24 := by
+  simp_rw [leviCivita_basis_repr_apply]
+  rw [show (∑ b : ComponentIdx (S := realLorentzTensor 3)
+        ![Color.up, Color.up, Color.up, Color.up],
+        (generalizedKroneckerDelta (fun i => finSumFinEquiv (b i)) (id : Fin 4 → Fin 4) : ℝ)
+          * (generalizedKroneckerDelta (fun i => finSumFinEquiv (b i)) (id : Fin 4 → Fin 4) : ℝ))
+      = ∑ g : Fin 4 → Fin 4,
+        (generalizedKroneckerDelta g id : ℝ) * (generalizedKroneckerDelta g id : ℝ) from
+    Fintype.sum_equiv (Equiv.piCongrRight (fun _ : Fin 4 => finSumFinEquiv)) _ _ (fun x => rfl)]
+  have hcast : ∀ g : Fin 4 → Fin 4,
+      ((generalizedKroneckerDelta g id : ℝ)) * (generalizedKroneckerDelta g id : ℝ)
+        = ((generalizedKroneckerDelta g id * generalizedKroneckerDelta g id : ℤ) : ℝ) :=
+    fun g => by push_cast; ring
+  rw [Finset.sum_congr rfl fun g _ => hcast g, ← Int.cast_sum, symbol_zero]
+  norm_num
+
+/-- **Triple Levi-Civita contraction** `ε^{μνρσ} ε^{μνρτ} = 6 δ^σ_τ` at the symbol level:
+contracting three of the four component slots of `ε4` leaves one free pair `a, b` and the factor
+`3! = 6`. -/
+lemma leviCivita_symbol_contract_one (a b : Fin 1 ⊕ Fin 3) :
+    ∑ h : Fin 3 → (Fin 1 ⊕ Fin 3),
+        (Tensor.basis _).repr ε4 (Fin.cons a h) * (Tensor.basis _).repr ε4 (Fin.cons b h)
+      = 6 * ((kroneckerDelta a b : ℕ) : ℝ) := by
+  simp_rw [leviCivita_basis_repr_apply, cons_finSum]
+  rw [show (∑ h : Fin 3 → (Fin 1 ⊕ Fin 3),
+        (generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv a) (fun j => finSumFinEquiv (h j)))
+            (id : Fin 4 → Fin 4) : ℝ)
+          * (generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv b) (fun j => finSumFinEquiv (h j)))
+            (id : Fin 4 → Fin 4) : ℝ))
+      = ∑ h' : Fin 3 → Fin 4,
+        (generalizedKroneckerDelta (Fin.cons (finSumFinEquiv a) h') id : ℝ)
+          * (generalizedKroneckerDelta (Fin.cons (finSumFinEquiv b) h') id : ℝ) from
+    Fintype.sum_equiv (Equiv.piCongrRight (fun _ : Fin 3 => finSumFinEquiv)) _ _ (fun h => rfl)]
+  have hcast : ∀ h' : Fin 3 → Fin 4,
+      (generalizedKroneckerDelta (Fin.cons (finSumFinEquiv a) h') id : ℝ)
+        * (generalizedKroneckerDelta (Fin.cons (finSumFinEquiv b) h') id : ℝ)
+        = ((generalizedKroneckerDelta (Fin.cons (finSumFinEquiv a) h') id
+            * generalizedKroneckerDelta (Fin.cons (finSumFinEquiv b) h') id : ℤ) : ℝ) :=
+    fun h' => by push_cast; ring
+  rw [Finset.sum_congr rfl fun h' _ => hcast h', ← Int.cast_sum, symbol_one, kron_finSum]
+  push_cast; ring
+
+/-- **Double Levi-Civita contraction** `ε^{μνρσ} ε^{μντω} = 2 (δ^ρ_τ δ^σ_ω - δ^ρ_ω δ^σ_τ)` at the
+symbol level: contracting two of the four component slots of `ε4` leaves two free pairs and the
+factor `2! = 2`. -/
+lemma leviCivita_symbol_contract_two (r s t w : Fin 1 ⊕ Fin 3) :
+    ∑ h : Fin 2 → (Fin 1 ⊕ Fin 3),
+        (Tensor.basis _).repr ε4 (Fin.cons r (Fin.cons s h))
+          * (Tensor.basis _).repr ε4 (Fin.cons t (Fin.cons w h))
+      = 2 * (((kroneckerDelta r t : ℕ) : ℝ) * ((kroneckerDelta s w : ℕ) : ℝ)
+          - ((kroneckerDelta r w : ℕ) : ℝ) * ((kroneckerDelta s t : ℕ) : ℝ)) := by
+  simp_rw [leviCivita_basis_repr_apply, cons_finSum]
+  rw [show (∑ h : Fin 2 → (Fin 1 ⊕ Fin 3),
+        (generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv r)
+              (Fin.cons (finSumFinEquiv s) (fun j => finSumFinEquiv (h j))))
+            (id : Fin 4 → Fin 4) : ℝ)
+          * (generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv t)
+              (Fin.cons (finSumFinEquiv w) (fun j => finSumFinEquiv (h j))))
+            (id : Fin 4 → Fin 4) : ℝ))
+      = ∑ h' : Fin 2 → Fin 4,
+        (generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv r) (Fin.cons (finSumFinEquiv s) h')) id : ℝ)
+          * (generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv t) (Fin.cons (finSumFinEquiv w) h')) id : ℝ) from
+    Fintype.sum_equiv (Equiv.piCongrRight (fun _ : Fin 2 => finSumFinEquiv)) _ _ (fun h => rfl)]
+  have hcast : ∀ h' : Fin 2 → Fin 4,
+      (generalizedKroneckerDelta
+          (Fin.cons (finSumFinEquiv r) (Fin.cons (finSumFinEquiv s) h')) id : ℝ)
+        * (generalizedKroneckerDelta
+          (Fin.cons (finSumFinEquiv t) (Fin.cons (finSumFinEquiv w) h')) id : ℝ)
+        = ((generalizedKroneckerDelta
+            (Fin.cons (finSumFinEquiv r) (Fin.cons (finSumFinEquiv s) h')) id
+            * generalizedKroneckerDelta
+              (Fin.cons (finSumFinEquiv t) (Fin.cons (finSumFinEquiv w) h')) id : ℤ) : ℝ) :=
+    fun h' => by push_cast; ring
+  rw [Finset.sum_congr rfl fun h' _ => hcast h', ← Int.cast_sum, symbol_two,
+    kron_finSum, kron_finSum, kron_finSum, kron_finSum]
+  push_cast; ring
+
 end realLorentzTensor
-
-
