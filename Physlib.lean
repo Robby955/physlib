@@ -434,6 +434,7 @@ public import Physlib.Relativity.Tensors.Contraction.Products
 public import Physlib.Relativity.Tensors.Contraction.Pure
 public import Physlib.Relativity.Tensors.Contraction.SuccSuccAbove
 public import Physlib.Relativity.Tensors.Contraction.UnitTensorContraction
+public import Physlib.Relativity.Tensors.Contraction.UnitTensorTrace
 public import Physlib.Relativity.Tensors.Dual
 public import Physlib.Relativity.Tensors.Elab
 public import Physlib.Relativity.Tensors.Evaluation
