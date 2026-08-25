@@ -397,6 +397,7 @@ public import Physlib.Relativity.MinkowskiMatrix
 public import Physlib.Relativity.PauliMatrices.AsTensor
 public import Physlib.Relativity.PauliMatrices.Basic
 public import Physlib.Relativity.PauliMatrices.CliffordAlgebra
+public import Physlib.Relativity.PauliMatrices.LorentzGenerators
 public import Physlib.Relativity.PauliMatrices.Relations
 public import Physlib.Relativity.PauliMatrices.SelfAdjoint
 public import Physlib.Relativity.PauliMatrices.ToTensor
